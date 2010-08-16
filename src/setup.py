@@ -4,7 +4,7 @@ from eppy import __version__
 
 
 setup(
-    name = "eppy",
+    name = "EPPy",
     version = __version__,
     author = "Wil Tan",
     author_email = "wil@cloudregistry.net",
