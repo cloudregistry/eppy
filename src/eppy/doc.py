@@ -116,10 +116,10 @@ class EppCheckDomainCommand(EppCommand):
 
 class EppInfoCommand(EppCommand):
     _path = ['epp', 'command', 'info']
-    def __init__(self, dct=None, path=_path):
+    def __init__(self, dct=None, path=_path, extra_nsmap={}):
         if dct is None:
             dct = self.cmddef()
-        super(EppInfoCommand, self).__init__(dct, path=path)
+        super(EppInfoCommand, self).__init__(dct, path=path, extra_nsmap=extra_nsmap)
 
     @classmethod
     def cmddef(cls):
@@ -134,10 +134,10 @@ class EppInfoCommand(EppCommand):
 
 class EppInfoDomainCommand(EppInfoCommand):
     _path = ['epp', 'command', 'info', 'domain:info']
-    def __init__(self, dct=None, path=_path):
+    def __init__(self, dct=None, path=_path, extra_nsmap={}):
         if dct is None:
             dct = self.cmddef()
-        super(EppInfoDomainCommand, self).__init__(dct, path=path)
+        super(EppInfoDomainCommand, self).__init__(dct, path=path, extra_nsmap=extra_nsmap)
 
     @classmethod
     def cmddef(cls):
@@ -152,13 +152,14 @@ class EppInfoDomainCommand(EppInfoCommand):
 
 
 class EppCreateDomainCommand(EppCommand):
-    def __init__(self, dct=None, path=['epp', 'command', 'create', 'domain:create']):
+    def __init__(self, dct=None, path=['epp', 'command', 'create', 'domain:create'], extra_nsmap={}):
         #print "comand init", dct
         childorder = ['name', 'period', 'ns', 'registrant', 'contact', 'authInfo']
         if dct is None:
             dct = {
                     'epp': {
                         'command': {
+                            '_order': ['create', 'extension'],
                             'create': {
                                 "domain:create": {},
                                 },
@@ -169,7 +170,7 @@ class EppCreateDomainCommand(EppCommand):
         #dct['epp']['command']['create']['domain:create']['_order'] = childorder
         dpath_get(dct, path)['_order'] = childorder
 
-        super(EppCreateDomainCommand, self).__init__(dct, path=path)
+        super(EppCreateDomainCommand, self).__init__(dct, path=path, extra_nsmap=extra_nsmap)
 
 
 class EppUpdateCommand(EppCommand):
