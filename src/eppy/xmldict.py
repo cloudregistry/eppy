@@ -170,12 +170,13 @@ def dict2xml(xmldict):
     root = ElementTree.Element(roottag)
 
     prefixes = set()
-    if xmldict._nsmap:
-        prefix, uri = _do_xmlns(root, roottag, prefixes, xmldict._nsmap)
+    nsmap = getattr(xmldict, '_nsmap', {})
+    if nsmap:
+        prefix, uri = _do_xmlns(root, roottag, prefixes, nsmap)
         if uri:
             prefixes.add(prefix)
     #print "dict2xml(%r, roottag=%r)" % (xmldict, roottag)
-    _dict2xml_recurse(root, xmldict[roottag], current_prefixes=prefixes, nsmap=xmldict._nsmap)
+    _dict2xml_recurse(root, xmldict[roottag], current_prefixes=prefixes, nsmap=nsmap)
     return root
 
 
