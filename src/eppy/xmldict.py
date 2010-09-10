@@ -191,23 +191,36 @@ def _compute_prefix(tag, nsmap_r={}, default_prefix=None):
     return tag, default_prefix
 
 
+def get_prefix_and_name(nsmap_r, name):
+    if name.startswith('{'):
+        enduri = name.index("}")
+        prefix = nsmap_r.get(name[1:enduri])
+        return prefix, name[enduri+1:]
+    else:
+        return None, name
+
+
+def get_prefixed_name(nsmap_r, name):
+    """meant for attributes"""
+    prefix, name = get_prefix_and_name(nsmap_r, name)
+    if prefix is not None:
+        return "%s:%s" % (prefix, name)
+    else:
+        return name
+
+
 def _xml2dict_recurse(node, nodedict, dictclass, nsmap, nsmap_r, default_prefix=None):
     #print "nodedict = %r" % (nodedict,)
     if len(node.items()) > 0:
         # if we have attributes, set them
         ## wil/rem nodedict.update(dict(node.items()))
-        nodedict.update(dict(("@%s" % k, v) for k,v in node.items()))
+        nodedict.update(dict(("@%s" % get_prefixed_name(nsmap_r, k), v) for k,v in node.items()))
 
     for child in node:
-        childprefix = None
-        childtag = child.tag
-        if childtag.startswith("{"):
-            enduri = childtag.index("}")
-            childprefix = nsmap_r.get(childtag[1:enduri])
-            if childprefix is not None:
-                childtag = childtag[enduri+1:]
-                if childprefix != default_prefix: # namespace changed
-                    childtag = "%s:%s" % (childprefix, childtag)
+        childprefix, childtag = get_prefix_and_name(nsmap_r, child.tag)
+        if childprefix is not None:
+            if childprefix and childprefix != default_prefix: # namespace changed
+                childtag = "%s:%s" % (childprefix, childtag[enduri+1:])
 
         #print "recursing with", childtag, "[", childprefix, "] default=", default_prefix
         # recursively add the element's children
@@ -244,15 +257,23 @@ def _xml2dict_recurse(node, nodedict, dictclass, nsmap, nsmap_r, default_prefix=
     return nodedict
 
 
-def xml2dict (root, dictclass=XmlDictObject, initialclass=XmlDictObject, default_prefix=None):
+def xml2dict(root, dictclass=XmlDictObject, initialclass=XmlDictObject, default_prefix=None, nsmap={}, nsmap_r={}):
     """convert an xml tree into a python dictionary
     """
     rootnode = dictclass()
 
     # we cheat a bit, instantiate it to get the nsmap and nsmap_r
-    tmp = initialclass()
-    nsmap_r = tmp._nsmap_r
-    nsmap = tmp._nsmap
+    if not nsmap:
+        tmp = initialclass()
+        nsmap = tmp._nsmap
+        nsmap_r = tmp._nsmap_r
+
+    if not nsmap_r:
+        # build reverse map
+        for prefix, uri in nsmap.iteritems():
+            if uri in nsmap_r and not prefix: # default prefix should not override anything already in the rmap
+                continue
+            nsmap_r[uri] = prefix
 
     tag, default_prefix = _compute_prefix(root.tag, nsmap_r, default_prefix)
     return initialclass({tag: _xml2dict_recurse(root, rootnode, dictclass, nsmap=nsmap, nsmap_r=nsmap_r, default_prefix=default_prefix)})
