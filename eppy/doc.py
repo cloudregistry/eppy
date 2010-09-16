@@ -48,10 +48,23 @@ class EppDoc(XmlDictObject):
                 it = it.__getitem__(p)
         return it.__setitem__(item, value)
 
+    def __delattr__(self, item):
+        it = super(EppDoc, self)
+        if not item.startswith("_"):
+            for p in self._path:
+                it = it.__getitem__(p)
+        return it.__delitem__(item)
+
     def toxml(self):
         el = dict2xml(self)
         indent(el)
         return ElementTree.tostring(el)
+
+    def __unicode__(self):
+        return self.toxml()
+
+    def __str__(self):
+        return unicode(self).encode('utf-8')
 
 
 class EppCommand(EppDoc):
@@ -65,7 +78,7 @@ class EppCommand(EppDoc):
 class EppLoginCommand(EppCommand):
     def __init__(self, dct=None, path=['epp', 'command', 'login']):
         #print "comand init", dct
-        childorder = ['clID', 'pw', 'options', 'svcs']
+        childorder = ['clID', 'pw', 'newPW', 'options', 'svcs']
         if dct is None:
             dct = {
                     'epp': {
