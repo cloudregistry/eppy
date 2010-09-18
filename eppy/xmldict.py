@@ -188,6 +188,7 @@ def _compute_prefix(tag, nsmap_r={}, default_prefix=None):
             tag = tag[enduri+1:]
             if prefix != default_prefix: # namespace changed
                 tag = "%s:%s" % (prefix, tag)
+                default_prefix = prefix
     return tag, default_prefix
 
 
@@ -217,10 +218,7 @@ def _xml2dict_recurse(node, nodedict, dictclass, nsmap, nsmap_r, default_prefix=
         nodedict.update(dict(("@%s" % get_prefixed_name(nsmap_r, k), v) for k,v in node.items()))
 
     for child in node:
-        childprefix, childtag = get_prefix_and_name(nsmap_r, child.tag)
-        if childprefix is not None:
-            if childprefix and childprefix != default_prefix: # namespace changed
-                childtag = "%s:%s" % (childprefix, childtag[enduri+1:])
+        childtag, childprefix = _compute_prefix(child.tag, nsmap_r, default_prefix)
 
         #print "recursing with", childtag, "[", childprefix, "] default=", default_prefix
         # recursively add the element's children
