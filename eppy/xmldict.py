@@ -10,6 +10,7 @@ functions to convert an XML file into a python dict, back and forth
 """
 __author__ = "Wil Tan <http://cloudregistry.net/people/wil>"
 
+from StringIO import StringIO
 
 # hack: LCGCMT had the py-2.5 xml.etree module hidden by mistake.
 #       this is to import it, by hook or by crook
@@ -96,6 +97,20 @@ class XmlDictObject(dict):
             return [XmlDictObject._unwrap(v) for v in x]
         else:
             return x
+
+
+    def to_xml(self):
+        el = dict2xml(self)
+        indent(el)
+        return ElementTree.tostring(el)
+
+
+    @classmethod
+    def from_xml(cls, buf, default_prefix=None):
+        root = ElementTree.parse(StringIO(buf)).getroot()
+        rv = xml2dict(root, initialclass=cls, default_prefix=default_prefix)
+        return rv
+
         
     def unwrap(self):
         return XmlDictObject._unwrap(self)
@@ -275,6 +290,22 @@ def xml2dict(root, dictclass=XmlDictObject, initialclass=XmlDictObject, default_
 
     tag, default_prefix = _compute_prefix(root.tag, nsmap_r, default_prefix)
     return initialclass({tag: _xml2dict_recurse(root, rootnode, dictclass, nsmap=nsmap, nsmap_r=nsmap_r, default_prefix=default_prefix)})
+
+
+def indent(elem, level=0):
+    i = "\n" + level*"  "
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "  "
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for elem in elem:
+            indent(elem, level+1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
 
 
 

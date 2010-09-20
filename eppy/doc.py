@@ -9,22 +9,6 @@ EPP_NSMAP = {
         'host': 'urn:ietf:params:xml:ns:host-1.0',
 }
 
-def indent(elem, level=0):
-    i = "\n" + level*"  "
-    if len(elem):
-        if not elem.text or not elem.text.strip():
-            elem.text = i + "  "
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-        for elem in elem:
-            indent(elem, level+1)
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-    else:
-        if level and (not elem.tail or not elem.tail.strip()):
-            elem.tail = i
-
-
 class EppDoc(XmlDictObject):
     def __init__(self, dct=None, path=['epp'], extra_nsmap={}):
         nsmap = EPP_NSMAP.copy()
@@ -55,13 +39,12 @@ class EppDoc(XmlDictObject):
                 it = it.__getitem__(p)
         return it.__delitem__(item)
 
-    def toxml(self):
-        el = dict2xml(self)
-        indent(el)
-        return ElementTree.tostring(el)
+    @classmethod
+    def from_xml(cls, buf, default_prefix='epp'):
+        return super(EppDoc, cls).from_xml(buf, default_prefix=default_prefix)
 
     def __unicode__(self):
-        return self.toxml()
+        return self.to_xml()
 
     def __str__(self):
         return unicode(self).encode('utf-8')
@@ -278,6 +261,34 @@ class EppTransferDomainCommand(EppTransferCommand):
         return dct
 
 
+class EppResponse(EppDoc):
+    def __init__(self, dct=None, path=['epp', 'response'], extra_nsmap={}):
+        if dct is None:
+            dct = {'epp': {'response': {}}}
+        super(EppResponse, self).__init__(dct, path=path, extra_nsmap=extra_nsmap)
+
+
+    @property
+    def code(self):
+        return self.result['@code']
+
+    @property
+    def ok(self):
+        return self.code == '1000'
+
+    @property
+    def pending(self):
+        return self.code == '1001'
+
+    @property
+    def success(self):
+        return self.code in ('1000', '1001')
+
+    @property
+    def msg(self):
+        return self.result.msg
+
+
 
 def dpath_get(dct, path, default=None):
     it = dct
@@ -299,7 +310,7 @@ if __name__ == '__main__':
     cmd.authInfo=dict(pw='fooBAR')
 
     #print "handcrafted = ", json_encode(cmd)
-    xml = cmd.toxml()
+    xml = cmd.to_xml()
     print xml
 
     root = ElementTree.parse(StringIO(xml)).getroot()
@@ -310,7 +321,7 @@ if __name__ == '__main__':
     print "domain = ", cmd2.name
 
     print "again back to XML="
-    print cmd2.toxml()
+    print cmd2.to_xml()
 
     sys.exit(0)
     cmd = {
