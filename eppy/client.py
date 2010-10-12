@@ -1,7 +1,6 @@
 try:
     # use gevent if available
     import gevent.socket as socket
-    print "YAY!"
 except ImportError:
     import socket
 
