@@ -42,7 +42,13 @@ __all__ = [
 
 ## module implementation ------------------------------------------------------
 class XmlDictObject(dict):
+    _nsmap = {}
+    _nsmap_r = {}
+    _path = ()
+    _childorder = {} # relative to _path; only useful if defined at the same level at which _path is defined/overridden
+
     def __init__(self, initdict=None, nsmap=None):
+        # NOTE: setting attributes in __init__ will require special handling, see XmlDictObject
         if initdict is None:
             initdict = {}
         dict.__init__(self, initdict)
@@ -56,22 +62,43 @@ class XmlDictObject(dict):
                     continue
                 nsmap_r[uri] = prefix
             self._nsmap_r = nsmap_r
-        else:
-            self._nsmap_r = {}
-            self._nsmap = {}
-    
+
+        self.__initialized = True
+
+
     def __getattr__(self, item):
-        if item.startswith("_"):
-            getattr(self, item)
-            return super(XmlDictObject, self).__getattr__(item)
-        return self.__getitem__(item)
- 
+        it = self
+        for p in self._path:
+            it = it[p]
+        return it[item]
+
+
     def __setattr__(self, item, value):
-        if item.startswith("_"):
+        if not self.__dict__.has_key('_XmlDictObject__initialized'):
+            # this test allows attributes to be set in the __init__ method
+            return super(XmlDictObject, self).__setattr__(item, value)
+
+        if item.startswith("__"):
             super(XmlDictObject, self).__setattr__(item, value)
             return
-        self.__setitem__(item, value)
-    
+
+        it = self
+        for p in self._path:
+            it = it.__getitem__(p)
+        return it.__setitem__(item, value)
+
+
+    def __delattr__(self, item):
+        if item.startswith("__"):
+            super(XmlDictObject, self).__delattr__(item)
+            return
+
+        it = self
+        for p in self._path:
+            it = it.__getitem__(p)
+        return it.__delitem__(item)
+
+
     def __str__(self):
         if '_text' in self:
             return self['_text']
@@ -99,8 +126,8 @@ class XmlDictObject(dict):
             return x
 
 
-    def to_xml(self):
-        el = dict2xml(self)
+    def to_xml(self, childorder):
+        el = dict2xml(self, childorder)
         indent(el)
         return ElementTree.tostring(el)
 
@@ -116,14 +143,21 @@ class XmlDictObject(dict):
         return XmlDictObject._unwrap(self)
 
 
-def _dict2xml_recurse(parent, dictitem, nsmap={}, current_prefixes=set()):
+def _dict2xml_recurse(parent, dictitem, nsmap, current_prefixes, childorder):
+    """
+    :param nsmap: is a dict, can be `{}`
+    :param current_prefixes: is a set
+    :param childorder: is a dict, can be `{}`
+    """
     assert type(dictitem) is not type(list) # XXX: this looks wrong, should it be just `list`?
 
     #print "_dict2xml_recurse(%r)" % (dictitem,)
     #print "nsmap=%r" % (nsmap,)
+    #import ipdb; ipdb.set_trace()
     if isinstance(dictitem, dict):
-        if '_order' in dictitem:
-            nodeorder = dict((name, i) for i,name in enumerate(dictitem['_order']))
+        if '_order' in dictitem or '__order' in childorder:
+            ordr = dictitem.get('_order') or childorder['__order']
+            nodeorder = dict((name, i) for i,name in enumerate(ordr))
             items = sorted(list(dictitem.iteritems()), key=lambda x: nodeorder.get(x[0].split(":")[-1], 0))
         else:
             items = list(dictitem.iteritems())
@@ -148,7 +182,11 @@ def _dict2xml_recurse(parent, dictitem, nsmap={}, current_prefixes=set()):
                             nsmap_recurs[''] = uri
                             prefixes_recurs = current_prefixes.union([prefix])
                     parent.append(elem)
-                    _dict2xml_recurse(elem, listchild, nsmap=nsmap_recurs, current_prefixes=prefixes_recurs)
+                    _dict2xml_recurse(elem,
+                                      listchild,
+                                      nsmap=nsmap_recurs,
+                                      current_prefixes=prefixes_recurs,
+                                      childorder=childorder.get(tag, {}))
             else:                
                 elem = ElementTree.Element(tag)
                 parent.append(elem)
@@ -160,7 +198,11 @@ def _dict2xml_recurse(parent, dictitem, nsmap={}, current_prefixes=set()):
                         nsmap_recurs = nsmap.copy()
                         nsmap_recurs[''] = uri
                         prefixes_recurs = current_prefixes.union([prefix])
-                _dict2xml_recurse(elem, child, nsmap=nsmap_recurs, current_prefixes=prefixes_recurs)
+                _dict2xml_recurse(elem,
+                                  child,
+                                  nsmap=nsmap_recurs,
+                                  current_prefixes=prefixes_recurs,
+                                  childorder=childorder.get(tag, {}))
     else:
         parent.text = str(dictitem)
 
@@ -179,7 +221,7 @@ def _do_xmlns(elem, tag, prefixes, nsmap):
     return prefix, uri
 
 
-def dict2xml(xmldict):
+def dict2xml(xmldict, childorder):
     """convert a python dictionary into an XML tree"""
     roottag = filter(lambda x: not x.startswith("_"), xmldict.keys())[0]
     root = ElementTree.Element(roottag)
@@ -191,7 +233,7 @@ def dict2xml(xmldict):
         if uri:
             prefixes.add(prefix)
     #print "dict2xml(%r, roottag=%r)" % (xmldict, roottag)
-    _dict2xml_recurse(root, xmldict[roottag], current_prefixes=prefixes, nsmap=nsmap)
+    _dict2xml_recurse(root, xmldict[roottag], current_prefixes=prefixes, nsmap=nsmap, childorder=childorder)
     return root
 
 
