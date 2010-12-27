@@ -104,11 +104,11 @@ class EppCheckDomainCommand(EppCommand):
 
 
 class EppInfoCommand(EppCommand):
-    _path = ['epp', 'command', 'info']
-    def __init__(self, dct=None, path=_path, extra_nsmap={}):
+    _path = ('epp', 'command', 'info')
+    def __init__(self, dct=None, extra_nsmap={}):
         if dct is None:
             dct = self.cmddef()
-        super(EppInfoCommand, self).__init__(dct, path=path, extra_nsmap=extra_nsmap)
+        super(EppInfoCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
 
     @classmethod
     def cmddef(cls):
@@ -122,11 +122,13 @@ class EppInfoCommand(EppCommand):
 
 
 class EppInfoDomainCommand(EppInfoCommand):
-    _path = ['epp', 'command', 'info', 'domain:info']
-    def __init__(self, dct=None, path=_path, extra_nsmap={}):
+    _path = EppInfoCommand._path + ('domain:info',)
+    _childorder = {'__order': childorder.CMD_INFO_DOMAIN}
+
+    def __init__(self, dct=None, extra_nsmap={}):
         if dct is None:
             dct = self.cmddef()
-        super(EppInfoDomainCommand, self).__init__(dct, path=path, extra_nsmap=extra_nsmap)
+        super(EppInfoDomainCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
 
     @classmethod
     def cmddef(cls):
@@ -134,7 +136,25 @@ class EppInfoDomainCommand(EppInfoCommand):
         dpath = dpath_get(dct, EppInfoCommand._path)
         dpath['domain:info'] = {}
         dpath = dpath_get(dct, cls._path)
-        dpath['_order'] = ['name', 'authInfo']
+        return dct
+
+
+
+class EppInfoContactCommand(EppInfoCommand):
+    _path = EppInfoCommand._path + ('contact:info',)
+    _childorder = {'__order': childorder.CMD_INFO_CONTACT}
+
+    def __init__(self, dct=None, extra_nsmap={}):
+        if dct is None:
+            dct = self.cmddef()
+        super(EppInfoContactCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
+
+    @classmethod
+    def cmddef(cls):
+        dct = EppInfoCommand.cmddef()
+        dpath = dpath_get(dct, EppInfoCommand._path)
+        dpath['contact:info'] = {}
+        dpath = dpath_get(dct, cls._path)
         return dct
 
 
@@ -197,10 +217,10 @@ class EppCreateContactCommand(EppCommand):
 class EppUpdateCommand(EppCommand):
     _path = ('epp', 'command', 'update')
 
-    def __init__(self, dct=None, path=_path, extra_nsmap={}):
+    def __init__(self, dct=None, extra_nsmap={}):
         if dct is None:
             dct = self.cmddef()
-        super(EppUpdateCommand, self).__init__(dct, path=path, extra_nsmap=extra_nsmap)
+        super(EppUpdateCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
 
     @classmethod
     def cmddef(cls):
@@ -229,6 +249,23 @@ class EppUpdateDomainCommand(EppUpdateCommand):
                         },
                     }
         super(EppUpdateDomainCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
+
+
+
+class EppUpdateContactCommand(EppUpdateCommand):
+    _path = EppUpdateCommand._path + ('contact:update',)
+    _childorder = {
+        '__order': childorder.CMD_UPDATE_CONTACT,
+        'chg': {
+            '__order': childorder.CMD_UPDATE_CONTACT_CHG,
+        },
+    }
+
+    def __init__(self, dct=None, extra_nsmap={}):
+        if dct is None:
+            dct = dpath_make(self._path)
+
+        super(EppUpdateContactCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
 
 
 

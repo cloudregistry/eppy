@@ -85,6 +85,9 @@ class XmlDictObject(dict):
         it = self
         for p in self._path:
             it = it.__getitem__(p)
+
+        if type(value) is dict:
+            value = XmlDictObject(value)
         return it.__setitem__(item, value)
 
 
