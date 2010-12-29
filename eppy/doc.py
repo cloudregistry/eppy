@@ -103,6 +103,28 @@ class EppCheckDomainCommand(EppCommand):
         super(EppCheckDomainCommand, self).__init__(dct, path=path)
 
 
+class EppCheckHostCommand(EppCommand):
+    _path = ('epp', 'command', 'check', 'host:check')
+    def __init__(self, dct=None, hosts=None):
+        if dct is None:
+            if hosts is None:
+                hosts = []
+            elif not isinstance(hosts, (list, tuple)):
+                hosts = [hosts]
+
+            dct = {
+                    'epp': {
+                        'command': {
+                            'check': {
+                                'host:check': {'name': list(hosts)}
+                                },
+                            },
+                        },
+                    }
+
+        super(EppCheckHostCommand, self).__init__(dct)
+
+
 class EppInfoCommand(EppCommand):
     _path = ('epp', 'command', 'info')
     def __init__(self, dct=None, extra_nsmap={}):
