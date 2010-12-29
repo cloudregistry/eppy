@@ -207,7 +207,7 @@ def _dict2xml_recurse(parent, dictitem, nsmap, current_prefixes, childorder):
                                   current_prefixes=prefixes_recurs,
                                   childorder=childorder.get(tag, {}))
     else:
-        parent.text = str(dictitem)
+        parent.text = unicode(dictitem)
 
 
 def _do_xmlns(elem, tag, prefixes, nsmap):
