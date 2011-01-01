@@ -64,9 +64,17 @@ class EppClient():
         #self.log.debug("reading...")
         recvmeth = self.sock.read if self.ssl_enable else self.sock.recv
         siz = recvmeth(4)
+        if not siz:
+            self.close()
+            raise IOError("No size header read")
+
         siz = struct.unpack(">I", siz)[0] - 4
         #self.log.debug("reading %d bytes\n" % (siz,))
         data = recvmeth(siz)
+        if not data:
+            self.close()
+            raise IOError("No data read (expected %d bytes)" % siz)
+
         return data
         #self.log.debug("read total %d bytes:\n%s\n" % (siz+4, data))
 
@@ -78,7 +86,7 @@ class EppClient():
 
 
     def send(self, doc):
-        self.write(doc.to_xml())
+        self.write(str(doc))
         r = self.read()
         return EppResponse.from_xml(r)
 
