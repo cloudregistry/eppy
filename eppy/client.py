@@ -6,7 +6,7 @@ except ImportError:
 
 import struct
 import logging
-from .doc import EppResponse, EppLoginCommand
+from .doc import EppResponse, EppLoginCommand, EppLogoutCommand
 
 
 LOGIN_XML = """<epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd">
@@ -59,6 +59,12 @@ class EppClient():
         cmd.clID = clID
         cmd.pw = pw
         return self.send(cmd)
+
+
+    def logout(self):
+        cmd = EppLogoutCommand()
+        return self.send(cmd)
+
 
     def read(self):
         #self.log.debug("reading...")

@@ -73,6 +73,24 @@ class EppLoginCommand(EppCommand):
         return super(EppLoginCommand, self).to_xml(childorder)
 
 
+class EppLogoutCommand(EppCommand):
+    _path = ('epp', 'command', 'logout')
+
+    def __init__(self):
+        dct = {
+                'epp': {
+                    'command': {
+                        'logout': {},
+                        },
+                    },
+                }
+
+        super(EppLogoutCommand, self).__init__(dct)
+
+    def to_xml(self, childorder):
+        return super(EppLogoutCommand, self).to_xml(childorder)
+
+
 class EppCheckCommand(EppCommand):
     def __init__(self, dct=None, path=['epp', 'command', 'check']):
         if dct is None:
