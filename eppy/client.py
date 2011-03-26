@@ -91,21 +91,63 @@ class EppClient():
         writemeth(siz + data)
 
 
+    def write_many(self, docs):
+        """
+        For testing only.
+        Writes multiple documents at once
+        """
+        writemeth = self.sock.write if self.ssl_enable else self.sock.sendall
+        buf = []
+        for doc in docs:
+            buf.append(struct.pack(">I", 4+len(doc)))
+            buf.append(doc)
+        writemeth(''.join(buf))
+
+
+
     def send(self, doc):
         self.write(str(doc))
         r = self.read()
         return EppResponse.from_xml(r)
 
 
-    def write_pipeline(self, data1, data2):
-        """
-        For testing only.
-        Writes two commands at once
-        """
-        writemeth = self.sock.write if self.ssl_enable else self.sock.sendall
-        siz1 = struct.pack(">I", 4+len(data1))
-        siz2 = struct.pack(">I", 4+len(data2))
-        writemeth(siz1 + data1 + siz2 + data2)
+    def batchsend(self, docs, readresponse=True, failfast=True, pipeline=False):
+        """ Send multiple documents. If ``pipeline`` is True, it will
+        send it in a single ``write`` call (which may have the effect
+        of having more than one doc packed into a single TCP packet
+        if they fits) """
+        sent = 0
+        recved = 0
+        ndocs = len(docs)
+        try:
+            if pipeline:
+                self.write_many(docs)
+                sent = ndocs
+            else:
+                for doc in docs:
+                    self.write(str(doc))
+                    sent += 1
+        except:
+            self.log.error("Failed to send all commands (sent %d/%d)" % (sent, ndocs))
+            if failfast:
+                raise
+
+        if not readresponse:
+            return sent
+
+        try:
+            out = []
+            for _ in xrange(sent):
+                r = self.read()
+                out.append(EppResponse.from_xml(r))
+                recved += 1
+        except:
+            self.log.error("Failed to receive all responses (recv'ed %d/%d)" % (recved, sent))
+            # pad the rest with None
+            for _ in xrange(sent-len(out)):
+                out.append(None)
+
+        return out
 
 
     def write_split(self, data):
