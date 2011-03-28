@@ -106,19 +106,24 @@ class EppCheckCommand(EppCommand):
 
 
 class EppCheckDomainCommand(EppCommand):
-    def __init__(self, dct=None, path=['epp', 'command', 'check', 'domain:check']):
+    _path = ('epp', 'command', 'check', 'domain:check')
+    def __init__(self, dct=None, domains=None):
         if dct is None:
+            if domains is None:
+                domains = []
+            elif isinstance(domains, basestring):
+                domains = [domains]
             dct = {
                     'epp': {
                         'command': {
                             'check': {
-                                'domain:check': {}
+                                'domain:check': {'name': list(domains)}
                                 },
                             },
                         },
                     }
 
-        super(EppCheckDomainCommand, self).__init__(dct, path=path)
+        super(EppCheckDomainCommand, self).__init__(dct)
 
 
 class EppCheckHostCommand(EppCommand):
@@ -198,6 +203,23 @@ class EppInfoContactCommand(EppInfoCommand):
         return dct
 
 
+class EppInfoHostCommand(EppInfoCommand):
+    _path = EppInfoCommand._path + ('host:info',)
+
+    def __init__(self, dct=None, extra_nsmap={}):
+        if dct is None:
+            dct = self.cmddef()
+        super(EppInfoHostCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
+
+    @classmethod
+    def cmddef(cls):
+        dct = EppInfoCommand.cmddef()
+        dpath = dpath_get(dct, EppInfoCommand._path)
+        dpath['host:info'] = {}
+        dpath = dpath_get(dct, cls._path)
+        return dct
+
+
 
 
 class EppCreateDomainCommand(EppCommand):
@@ -253,6 +275,27 @@ class EppCreateContactCommand(EppCommand):
         super(EppCreateContactCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
 
 
+class EppCreateHostCommand(EppCommand):
+    _path = ('epp', 'command', 'create', 'host:create')
+    _childorder = {'__order': childorder.CMD_CREATE_HOST}
+
+    def __init__(self, dct=None, extra_nsmap={}):
+        if dct is None:
+            dct = {
+                    'epp': {
+                        'command': {
+                            '_order': ['create', 'extension'],
+                            'create': {
+                                "host:create": {},
+                                },
+                            },
+                        },
+                    }
+
+        super(EppCreateHostCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
+
+
+
 
 class EppUpdateCommand(EppCommand):
     _path = ('epp', 'command', 'update')
@@ -306,6 +349,25 @@ class EppUpdateContactCommand(EppUpdateCommand):
             dct = dpath_make(self._path)
 
         super(EppUpdateContactCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
+
+
+class EppDeleteHostCommand(EppCommand):
+    _path = ('epp', 'command', 'delete', 'host:delete')
+
+    def __init__(self, dct=None, extra_nsmap={}):
+        if dct is None:
+            dct = {
+                    'epp': {
+                        'command': {
+                            '_order': ['delete', 'extension'],
+                            'delete': {
+                                "host:delete": {},
+                                },
+                            },
+                        },
+                    }
+
+        super(EppDeleteHostCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
 
 
 

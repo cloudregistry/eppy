@@ -10,6 +10,8 @@ CMD_CREATE_DOMAIN = ('name', 'period', 'ns', 'registrant', 'contact', 'authInfo'
 
 CMD_CREATE_CONTACT = ('id', 'postalInfo', 'voice', 'fax', 'email', 'authInfo', 'disclose')
 
+CMD_CREATE_HOST = ('name', 'addr')
+
 CMD_INFO_DOMAIN = ('name', 'authInfo')
 CMD_INFO_CONTACT = ('id', 'authInfo')
 
