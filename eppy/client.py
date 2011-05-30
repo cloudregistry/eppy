@@ -156,7 +156,7 @@ class EppClient():
         Writes the size header and first 4 bytes of the payload in one call,
         then the rest of the payload in another call.
         """
-        writemeth = self.sock.write if self.ssl_enable else self.sock.sendall
+        writemeth = self.sock.sendall if self.ssl_enable else self.sock.sendall
         siz = struct.pack(">I", 4+len(data))
         self.log.debug("siz=%d" % (4+len(data)))
         writemeth(siz + data[:4])
@@ -169,7 +169,7 @@ class EppClient():
         Writes 2 bytes of the header, then another two bytes,
         then the payload in another call.
         """
-        writemeth = self.sock.write if self.ssl_enable else self.sock.sendall
+        writemeth = self.sock.sendall if self.ssl_enable else self.sock.sendall
         siz = struct.pack(">I", 4+len(data))
         self.log.debug("siz=%d" % (4+len(data)))
         writemeth(siz[:2])
@@ -183,7 +183,7 @@ class EppClient():
         Writes 2 bytes of the header, then another two bytes,
         then 4 bytes of the payload, then the rest of the payload.
         """
-        writemeth = self.sock.write if self.ssl_enable else self.sock.sendall
+        writemeth = self.sock.sendall if self.ssl_enable else self.sock.sendall
         siz = struct.pack(">I", 4+len(data))
         self.log.debug("siz=%d" % (4+len(data)))
         writemeth(siz[:2])
