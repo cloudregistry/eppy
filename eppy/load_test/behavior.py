@@ -141,9 +141,9 @@ def strbool(v):
 BEHAVIORS = {
     'info_batch': lambda ctx, options, repeat=100: \
         BatchSendBehavior(ctx, [info_domain_factory(options.zone)]*int(repeat)),
-    'info_loop': lambda ctx, options, loop=20: LoopBehavior(ctx,
+    'info_loop': lambda ctx, options, loop=20, sleep=1: LoopBehavior(ctx,
                                                        SingleCommand(ctx, info_domain_factory(options.zone)),
-                                                       loop=loop),
+                                                       loop=loop, sleep=int(sleep)),
     'fatso': lambda ctx, options, num_domains=10: SingleCommand(ctx, check_domain_factory(options.zone, num_domains)),
 }
 
