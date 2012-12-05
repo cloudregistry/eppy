@@ -41,9 +41,9 @@ class EppClient():
         self.sock = None
 
 
-    def connect(self, host, port):
+    def connect(self, host, port=None):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect((host, port))
+        self.sock.connect((host, port or self.port))
         self._sock = self.sock
         if self.ssl_enable:
             self.sock = socket.ssl(self.sock, self.keyfile, self.certfile)
