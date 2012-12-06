@@ -17,6 +17,7 @@ def main():
     parser.add_option('--port', '-p', default=700, type=int, help='EPP port to connect to')
     parser.add_option('--ssl-key', default='certs/client-key.pem')
     parser.add_option('--ssl-cert', default='certs/client-cert.pem')
+    parser.add_option('--ssl-cacerts', default='certs/cacerts.pem')
     parser.add_option('--zone')
     (options, args) = parser.parse_args()
 
@@ -33,6 +34,7 @@ def main():
                            port=options.port,
                            ssl_key=options.ssl_key,
                            ssl_cert=options.ssl_cert,
+                           ssl_cacerts=options.ssl_cacerts,
                            userid=args[0],
                            passwd=args[1])
 

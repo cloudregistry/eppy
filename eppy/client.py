@@ -1,8 +1,10 @@
 try:
     # use gevent if available
     import gevent.socket as socket
+    import gevent.ssl as ssl
 except ImportError:
     import socket
+    import ssl
 
 import struct
 import logging
@@ -31,12 +33,13 @@ LOGIN_XML = """<epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www
 
 
 class EppClient():
-    def __init__(self, host=None, port=700, ssl_enable=True, ssl_keyfile=None, ssl_certfile=None):
+    def __init__(self, host=None, port=700, ssl_enable=True, ssl_keyfile=None, ssl_certfile=None, ssl_cacerts=None):
         self.host = host
         self.port = port
         self.ssl_enable = ssl_enable
         self.keyfile = ssl_keyfile
         self.certfile = ssl_certfile
+        self.cacerts = ssl_cacerts
         self.log = logging.getLogger(__name__)
         self.sock = None
 
@@ -46,7 +49,7 @@ class EppClient():
         self.sock.connect((host, port or self.port))
         self._sock = self.sock
         if self.ssl_enable:
-            self.sock = socket.ssl(self.sock, self.keyfile, self.certfile)
+            self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile, server_side=False, cert_reqs=ssl.CERT_REQUIRED, ca_certs=self.cacerts)
 
 
     def login(self, clID, pw):

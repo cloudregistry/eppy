@@ -1,11 +1,12 @@
 import logging
 
 class ExecutionContext(object):
-    def __init__(self, host=None, port=None, ssl_key=None, ssl_cert=None, userid=None, passwd=None):
+    def __init__(self, host=None, port=None, ssl_key=None, ssl_cert=None, ssl_cacerts=None, userid=None, passwd=None):
         self.host = host
         self.port = port
         self.ssl_key = ssl_key
         self.ssl_cert = ssl_cert
+        self.ssl_cacerts = ssl_cacerts
         self.userid = userid
         self.passwd = passwd
         self.max_ident = 0
