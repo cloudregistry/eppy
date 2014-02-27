@@ -40,9 +40,13 @@ __all__ = [
     'dict2xml',
     ]
 
+_BASE_NSMAP = {
+    'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+}
+
 ## module implementation ------------------------------------------------------
 class XmlDictObject(dict):
-    _nsmap = {}
+    _nsmap = _BASE_NSMAP
     _nsmap_r = {}
     _path = ()
     _childorder = {} # relative to _path; only useful if defined at the same level at which _path is defined/overridden
@@ -171,6 +175,7 @@ def _dict2xml_recurse(parent, dictitem, nsmap, current_prefixes, childorder):
             if str(tag) == '_text':
                 parent.text = str(child)
             elif str(tag).startswith("@"):
+                _do_xmlns(parent, str(tag)[1:], current_prefixes, nsmap, set_default_ns=False)
                 parent.set(str(tag)[1:], str(child))
             elif type(child) in (list, tuple):
                 for listchild in child:
@@ -210,7 +215,13 @@ def _dict2xml_recurse(parent, dictitem, nsmap, current_prefixes, childorder):
         parent.text = unicode(dictitem)
 
 
-def _do_xmlns(elem, tag, prefixes, nsmap):
+def _do_xmlns(elem, tag, prefixes, nsmap, set_default_ns=True):
+    if tag.startswith("{"):
+        # tag is in the form of "{NSURI}tagname", which means NSURI is not
+        # known in ``nsmap``
+        uri = tag[1:tag.rindex('}')]
+        return '', uri
+
     prefix, name = tag.split(":") if ":" in tag else ('', tag)
     if prefix in prefixes:
         return prefix, None
@@ -218,9 +229,11 @@ def _do_xmlns(elem, tag, prefixes, nsmap):
     if uri:
         if prefix:
             elem.set('xmlns:%s' % prefix, uri)
-            elem.set('xmlns', uri)
+            if set_default_ns:
+                elem.set('xmlns', uri)
         else:
-            elem.set('xmlns', uri)
+            if set_default_ns:
+                elem.set('xmlns', uri)
     return prefix, uri
 
 
@@ -294,15 +307,16 @@ def _xml2dict_recurse(node, nodedict, dictclass, nsmap, nsmap_r, default_prefix=
                 # convert to list
                 nodedict[childtag] = [nodeval, newitem]
         else:
+            nodedict.setdefault('_order', []).append(childtag)
             # only one, directly set the dictionary
             nodedict[childtag] = newitem
 
-    if node.text is None: 
+    if node.text is None:
         text = ''
-    else: 
+    else:
         text = node.text.strip()
 
-    if len(nodedict) > 0:            
+    if len(nodedict) > 0:
         # if we have a dictionary add the text as a dictionary value
         # (if there is any)
         if len(text) > 0:

@@ -1,13 +1,14 @@
-from eppy.xmldict import XmlDictObject, dict2xml, ElementTree
+from eppy.xmldict import XmlDictObject, _BASE_NSMAP, dict2xml, ElementTree
 from . import childorder
 
-EPP_NSMAP = {
-        '': 'urn:ietf:params:xml:ns:epp-1.0',
-        'epp': 'urn:ietf:params:xml:ns:epp-1.0',
-        'domain': 'urn:ietf:params:xml:ns:domain-1.0',
-        'contact': 'urn:ietf:params:xml:ns:contact-1.0',
-        'host': 'urn:ietf:params:xml:ns:host-1.0',
-}
+EPP_NSMAP = dict(_BASE_NSMAP)
+EPP_NSMAP.update({
+    '': 'urn:ietf:params:xml:ns:epp-1.0',
+    'epp': 'urn:ietf:params:xml:ns:epp-1.0',
+    'domain': 'urn:ietf:params:xml:ns:domain-1.0',
+    'contact': 'urn:ietf:params:xml:ns:contact-1.0',
+    'host': 'urn:ietf:params:xml:ns:host-1.0',
+})
 
 
 class EppDoc(XmlDictObject):
@@ -432,6 +433,7 @@ class EppTransferDomainCommand(EppTransferCommand):
 
 class EppResponse(EppDoc):
     _path = ('epp', 'response')
+    _childorder = {'__order': ('result', 'msgQ', 'resData', 'extension', 'trID')}
     
     def __init__(self, dct=None, extra_nsmap={}):
         if dct is None:
