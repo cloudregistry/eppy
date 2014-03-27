@@ -8,28 +8,7 @@ except ImportError:
 
 import struct
 import logging
-from .doc import EppResponse, EppLoginCommand, EppLogoutCommand
-
-
-LOGIN_XML = """<epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd">
-  <command>
-    <login>
-      <clID>root</clID> 
-      <pw>hahawebo</pw> 
-       <options>
-         <version>1.0</version>
-         <lang>en</lang>
-       </options>
-       <svcs>
-         <objURI>urn:ietf:params:xml:ns:domain-1.0</objURI>
-         <objURI>urn:ietf:params:xml:ns:host-1.0</objURI>
-         <objURI>urn:ietf:params:xml:ns:contact-1.0</objURI>
-       </svcs>
-     </login>
-     <clTRID>6Idjqb5LpfTleoFYnwrN</clTRID> 
-  </command>
-</epp>
-"""
+from .doc import EppResponse, EppHello, EppLoginCommand, EppLogoutCommand
 
 
 class EppClient():
@@ -42,6 +21,7 @@ class EppClient():
         self.cacerts = ssl_cacerts
         self.log = logging.getLogger(__name__)
         self.sock = None
+        self.greeting = None
 
 
     def connect(self, host, port=None):
@@ -52,11 +32,13 @@ class EppClient():
             self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile, server_side=False, cert_reqs=ssl.CERT_REQUIRED, ca_certs=self.cacerts)
 
 
+    def hello(self):
+        return self.send(EppHello())
+
     def login(self, clID, pw):
         if not self.sock:
             self.connect(self.host, self.port)
-            # XXX: ignore greeting
-            r = self.read()
+            self.greeting = EppResponse.from_xml(self.read())
 
         cmd = EppLoginCommand()
         cmd.clID = clID
@@ -197,42 +179,3 @@ class EppClient():
     def close(self):
         self._sock.close()
 
-
-
-
-if __name__ == '__main__':
-    import sys
-    import time
-    import logging
-    logging.basicConfig(level=logging.DEBUG, stream=sys.stderr)
-    epp = EppClient(logging.getLogger('root'), True, '/opt/cr/doc/certs/client.key', '/opt/cr/doc/certs/client.pem')
-    epp.connect('localhost', 7700)
-    epp.read()
-    epp.write_split(LOGIN_XML)
-    epp.read()
-    epp.close()
-    time.sleep(2)
-
-    logging.debug("splitsize")
-    epp = EppClient(logging.getLogger('root'), True, '/opt/cr/doc/certs/client.key', '/opt/cr/doc/certs/client.pem')
-    epp.connect('localhost', 7700)
-    epp.read()
-    epp.write_splitsize(LOGIN_XML)
-    epp.close()
-    time.sleep(1)
-
-    logging.debug("splitsize")
-    epp = EppClient(logging.getLogger('root'), True, '/opt/cr/doc/certs/client.key', '/opt/cr/doc/certs/client.pem')
-    epp.connect('localhost', 7700)
-    epp.read()
-    epp.write_splitall(LOGIN_XML)
-    epp.close()
-
-    logging.debug("two at one go")
-    epp = EppClient(logging.getLogger('root'), True, '/opt/cr/doc/certs/client.key', '/opt/cr/doc/certs/client.pem')
-    epp.connect('localhost', 7700)
-    epp.read()
-    epp.write_pipeline(LOGIN_XML, LOGIN_XML)
-    epp.read()
-    epp.read()
-    epp.close()

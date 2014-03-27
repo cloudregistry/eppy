@@ -37,8 +37,23 @@ class EppDoc(XmlDictObject):
         return super(EppDoc, cls).from_xml(buf, default_prefix=default_prefix)
 
 
+class EppHello(EppDoc):
+    _path = ('epp', 'hello')
+
+    def __init__(self, dct=None, extra_nsmap={}):
+        if dct is None:
+            dct = {
+                'epp': {
+                    'hello': {}
+                }
+            }
+        super(EppHello, self).__init__(dct, extra_nsmap=extra_nsmap)
+
+
+
 class EppCommand(EppDoc):
     _path = ('epp', 'command')
+
     def __init__(self, dct=None, extra_nsmap={}):
         if dct is None:
             dct = dpath_make(self._path)
