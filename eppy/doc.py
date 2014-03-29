@@ -311,6 +311,25 @@ class EppCreateHostCommand(EppCommand):
         super(EppCreateHostCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
 
 
+class EppRenewDomainCommand(EppCommand):
+    _path = ('epp', 'command', 'renew', 'domain:renew')
+    _childorder = {'__order': childorder.CMD_RENEW_DOMAIN}
+
+    def __init__(self, dct=None, extra_nsmap={}):
+        if dct is None:
+            dct = {
+                    'epp': {
+                        'command': {
+                            '_order': ['renew', 'extension'],
+                            'renew': {
+                                "domain:renew": {},
+                                },
+                            },
+                        },
+                    }
+        super(EppRenewDomainCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
+
+
 
 
 class EppUpdateCommand(EppCommand):

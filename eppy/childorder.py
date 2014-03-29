@@ -7,6 +7,7 @@ CMD_LOGIN = ('clID',
              'svcs')
 
 CMD_CREATE_DOMAIN = ('name', 'period', 'ns', 'registrant', 'contact', 'authInfo')
+CMD_RENEW_DOMAIN = ('name', 'curExpDate', 'period')
 
 CMD_CREATE_CONTACT = ('id', 'postalInfo', 'voice', 'fax', 'email', 'authInfo', 'disclose')
 
