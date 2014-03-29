@@ -449,7 +449,20 @@ class EppTransferDomainCommand(EppTransferCommand):
 class EppResponse(EppDoc):
     _path = ('epp', 'response')
     _childorder = {'__order': ('result', 'msgQ', 'resData', 'extension', 'trID')}
-    
+    _multi_nodes = set([
+        # If the command was processed successfully, only one <result>
+        # element MUST be returned. If the command was not processed
+        # successfully, multiple <result> elements MAY be returned to
+        # document failure conditions.
+        ('epp', 'response', 'result'),
+        ('epp', 'response', 'resData', 'domain:infData', 'status'),
+        ('epp', 'response', 'resData', 'domain:chkData', 'cd'),
+        ('epp', 'response', 'resData', 'host:infData', 'status'),
+        ('epp', 'response', 'resData', 'host:chkData', 'cd'),
+        ('epp', 'response', 'resData', 'contact:infData', 'status'),
+        ('epp', 'response', 'resData', 'contact:chkData', 'cd'),
+    ])
+
     def __init__(self, dct=None, extra_nsmap={}):
         if dct is None:
             dct = {'epp': {'response': {}}}
@@ -458,7 +471,7 @@ class EppResponse(EppDoc):
 
     @property
     def code(self):
-        return self.result['@code']
+        return self.result[0]['@code']
 
     @property
     def ok(self):
@@ -474,7 +487,11 @@ class EppResponse(EppDoc):
 
     @property
     def msg(self):
-        return self.result.msg
+        return self.result[0].msg
+
+    @property
+    def first_result(self):
+        return self.result[0].msg
 
 
 

@@ -142,7 +142,7 @@ class XmlDictObject(dict):
     @classmethod
     def from_xml(cls, buf, default_prefix=None):
         root = ElementTree.parse(StringIO(buf)).getroot()
-        rv = xml2dict(root, initialclass=cls, default_prefix=default_prefix)
+        rv = xml2dict(root, initialclass=cls, default_prefix=default_prefix, multi_nodes=cls._multi_nodes)
         return rv
 
         
@@ -283,7 +283,8 @@ def get_prefixed_name(nsmap_r, name):
         return name
 
 
-def _xml2dict_recurse(node, nodedict, dictclass, nsmap, nsmap_r, default_prefix=None):
+def _xml2dict_recurse(node, nodedict, dictclass, nsmap, nsmap_r, default_prefix=None, parent_path=None, multi_nodes=None):
+    parent_path = parent_path or tuple()
     #print "nodedict = %r" % (nodedict,)
     if len(node.items()) > 0:
         # if we have attributes, set them
@@ -295,7 +296,10 @@ def _xml2dict_recurse(node, nodedict, dictclass, nsmap, nsmap_r, default_prefix=
 
         #print "recursing with", childtag, "[", childprefix, "] default=", default_prefix
         # recursively add the element's children
-        newitem = _xml2dict_recurse(child, dictclass(), dictclass, nsmap, nsmap_r, default_prefix=childprefix)
+        newitem = _xml2dict_recurse(child, dictclass(), dictclass, nsmap, nsmap_r,
+                                    default_prefix=childprefix,
+                                    multi_nodes=multi_nodes,
+                                    parent_path=parent_path+(childtag,))
 
         nodeval = nodedict.get(childtag)
         if nodeval is not None:
@@ -308,8 +312,13 @@ def _xml2dict_recurse(node, nodedict, dictclass, nsmap, nsmap_r, default_prefix=
                 nodedict[childtag] = [nodeval, newitem]
         else:
             nodedict.setdefault('_order', []).append(childtag)
-            # only one, directly set the dictionary
-            nodedict[childtag] = newitem
+            nodepath = parent_path + (childtag,)
+            if multi_nodes and nodepath in multi_nodes:
+                # if this node is configured to appear multiple times, put it in a list
+                nodedict[childtag] = [newitem]
+            else:
+                # only one, directly set the dictionary
+                nodedict[childtag] = newitem
 
     if node.text is None:
         text = ''
@@ -329,7 +338,7 @@ def _xml2dict_recurse(node, nodedict, dictclass, nsmap, nsmap_r, default_prefix=
     return nodedict
 
 
-def xml2dict(root, dictclass=XmlDictObject, initialclass=XmlDictObject, default_prefix=None, nsmap={}, nsmap_r={}):
+def xml2dict(root, dictclass=XmlDictObject, initialclass=XmlDictObject, default_prefix=None, nsmap={}, nsmap_r={}, multi_nodes=None):
     """convert an xml tree into a python dictionary
     """
     rootnode = dictclass()
@@ -348,7 +357,7 @@ def xml2dict(root, dictclass=XmlDictObject, initialclass=XmlDictObject, default_
             nsmap_r[uri] = prefix
 
     tag, default_prefix = _compute_prefix(root.tag, nsmap_r, default_prefix)
-    return initialclass({tag: _xml2dict_recurse(root, rootnode, dictclass, nsmap=nsmap, nsmap_r=nsmap_r, default_prefix=default_prefix)})
+    return initialclass({tag: _xml2dict_recurse(root, rootnode, dictclass, nsmap=nsmap, nsmap_r=nsmap_r, default_prefix=default_prefix, parent_path=(tag,), multi_nodes=multi_nodes)})
 
 
 def indent(elem, level=0):
