@@ -32,6 +32,10 @@ class EppClient():
             self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile, server_side=False, cert_reqs=ssl.CERT_REQUIRED, ca_certs=self.cacerts)
 
 
+    def remote_info(self):
+        return '{}:{}'.format(*self.sock.getpeername())
+
+
     def hello(self):
         return self.send(EppHello())
 
