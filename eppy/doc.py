@@ -368,6 +368,26 @@ class EppUpdateDomainCommand(EppUpdateCommand):
                     }
         super(EppUpdateDomainCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
 
+    def add_secdns_data(self, data):
+        secdns_data = dict()
+        for action, value in data.iteritems():
+            update_data_key = 'secDNS:{}'.format(action)
+            update_data = list()
+            for item in value:
+                record_type = item['type']
+                record_key = 'secDNS:{}Data'.format(record_type)
+                if record_type == 'maxSigLife':
+                    update_data.append({record_key: [item['value'], ]})
+                    continue
+                if record_type == 'ds':
+                    order = ['secDNS:keyTag', 'secDNS:alg', 'secDNS:digestType', 'secDNS:digest']
+                else:
+                    order = ['secDNS:flags', 'secDNS:protocol', 'secDNS:alg', 'secDNS:pubkey']
+                record_data = {'secDNS:{}'.format(k): v for k, v in item['data'].iteritems()}
+                record_data['_order'] = order
+                update_data.append({record_key: record_data})
+            secdns_data[update_data_key] = update_data
+        self['epp']['command'].setdefault('extension', {})['secDNS:update'] = secdns_data
 
 
 class EppUpdateContactCommand(EppUpdateCommand):
@@ -384,6 +404,84 @@ class EppUpdateContactCommand(EppUpdateCommand):
             dct = dpath_make(self._path)
 
         super(EppUpdateContactCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
+
+
+class EppUpdateHostCommand(EppUpdateCommand):
+    _path = EppUpdateCommand._path + ('host:update',)
+    _childorder = {'__order': childorder.CMD_UPDATE_DOMAIN}
+
+    def __init__(self, dct=None, extra_nsmap={}):
+        if dct is None:
+            dct = {
+                'epp': {
+                    'command': {
+                        'update': {
+                            "host:update": {},
+                        },
+                    },
+                },
+            }
+        super(EppUpdateHostCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
+
+
+class EppCheckContactCommand(EppCommand):
+    _path = ('epp', 'command', 'check', 'contact:check')
+
+    def __init__(self, dct=None, contacts=None):
+        if dct is None:
+            if contacts is None:
+                contacts = []
+            elif isinstance(contacts, basestring):
+                contacts = [contacts]
+            dct = {
+                'epp': {
+                    'command': {
+                        'check': {
+                            'contact:check': {'id': list(contacts)}
+                        },
+                    },
+                },
+            }
+
+        super(EppCheckContactCommand, self).__init__(dct)
+
+
+class EppDeleteContactCommand(EppCommand):
+    _path = ('epp', 'command', 'delete', 'contact:delete')
+
+    def __init__(self, dct=None, extra_nsmap={}):
+        if dct is None:
+            dct = {
+                'epp': {
+                    'command': {
+                        '_order': ['delete', 'extension'],
+                        'delete': {
+                            "contact:delete": {},
+                        },
+                    },
+                },
+            }
+
+        super(EppDeleteContactCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
+
+
+class EppDeleteDomainCommand(EppCommand):
+    _path = ('epp', 'command', 'delete', 'domain:delete')
+
+    def __init__(self, dct=None, extra_nsmap={}):
+        if dct is None:
+            dct = {
+                'epp': {
+                    'command': {
+                        '_order': ['delete', 'extension'],
+                        'delete': {
+                            "domain:delete": {},
+                        },
+                    },
+                },
+            }
+
+        super(EppDeleteDomainCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
 
 
 class EppDeleteHostCommand(EppCommand):
@@ -533,7 +631,10 @@ if __name__ == '__main__':
     import sys
     from eppy.xmldict import xml2dict
     from StringIO import StringIO
-    from simplejson import dumps as json_encode
+    try:
+        from simplejson import dumps as json_encode
+    except ImportError:
+        from json import dumps as json_encode
 
     cmd = EppCreateDomainCommand()
     cmd.name = 'hello.me'

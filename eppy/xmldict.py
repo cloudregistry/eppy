@@ -381,7 +381,10 @@ def indent(elem, level=0):
 
 
 if __name__ == '__main__':
-    from simplejson import dumps as json_encode
+    try:
+        from simplejson import dumps as json_encode
+    except ImportError:
+        from json import dumps as json_encode
 
     def from_xml(filename):
         root = ElementTree.parse(filename).getroot()
