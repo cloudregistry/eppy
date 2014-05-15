@@ -380,9 +380,9 @@ class EppUpdateDomainCommand(EppUpdateCommand):
                     update_data.append({record_key: [item['value'], ]})
                     continue
                 if record_type == 'ds':
-                    order = ['secDNS:keyTag', 'secDNS:alg', 'secDNS:digestType', 'secDNS:digest']
+                    order = ['keyTag', 'alg', 'digestType', 'digest']
                 else:
-                    order = ['secDNS:flags', 'secDNS:protocol', 'secDNS:alg', 'secDNS:pubkey']
+                    order = ['flags', 'protocol', 'alg', 'pubKey']
                 record_data = {'secDNS:{}'.format(k): v for k, v in item['data'].iteritems()}
                 record_data['_order'] = order
                 update_data.append({record_key: record_data})
