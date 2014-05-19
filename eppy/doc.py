@@ -373,6 +373,7 @@ class EppUpdateDomainCommand(EppUpdateCommand):
         for action, value in data.iteritems():
             update_data_key = 'secDNS:{}'.format(action)
             update_data = list()
+            tmp_dict = dict()
             for item in value:
                 record_type = item['type']
                 record_key = 'secDNS:{}Data'.format(record_type)
@@ -386,6 +387,13 @@ class EppUpdateDomainCommand(EppUpdateCommand):
                 record_data = {'secDNS:{}'.format(k): v for k, v in item['data'].iteritems()}
                 record_data['_order'] = order
                 update_data.append({record_key: record_data})
+            for item in update_data:
+                for key, val in item.iteritems():
+                    if key in tmp_dict:
+                        tmp_dict[key].append(val)
+                    else:
+                        tmp_dict[key] = [val, ]
+            update_data = [{k: v[0] if len(v) == 1 else v} for k, v in tmp_dict.iteritems()]
             secdns_data[update_data_key] = update_data
         self['epp']['command'].setdefault('extension', {})['secDNS:update'] = secdns_data
 
