@@ -49,6 +49,11 @@ class EppHello(EppDoc):
             }
         super(EppHello, self).__init__(dct, extra_nsmap=extra_nsmap)
 
+    def normalize_response(self, respdoc):
+        """
+        perform any cleanup of a response document resulting from this command
+        """
+        pass
 
 
 class EppCommand(EppDoc):
@@ -59,7 +64,11 @@ class EppCommand(EppDoc):
             dct = dpath_make(self._path)
         super(EppCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
 
-
+    def normalize_response(self, respdoc):
+        """
+        perform any cleanup of a response document resulting from this command
+        """
+        pass
 
 
 class EppLoginCommand(EppCommand):
@@ -235,7 +244,21 @@ class EppInfoHostCommand(EppInfoCommand):
         dpath = dpath_get(dct, cls._path)
         return dct
 
+    def normalize_response(self, respdoc):
+        """
+        clean up addr
+        """
+        super(EppInfoHostCommand, self).normalize_response(respdoc)
+        try:
+            addrs = respdoc.resData['host:infData']['addr']
+        except (AttributeError, KeyError):
+            return
 
+        if addrs:
+            for i, addr in enumerate(addrs):
+                if not isinstance(addr, dict):
+                    # it should be a text
+                    addrs[i] = dict(_text=addr)
 
 
 class EppCreateDomainCommand(EppCommand):
@@ -583,6 +606,7 @@ class EppResponse(EppDoc):
         ('epp', 'response', 'resData', 'domain:infData', 'status'),
         ('epp', 'response', 'resData', 'domain:chkData', 'cd'),
         ('epp', 'response', 'resData', 'host:infData', 'status'),
+        ('epp', 'response', 'resData', 'host:infData', 'addr'),
         ('epp', 'response', 'resData', 'host:chkData', 'cd'),
         ('epp', 'response', 'resData', 'contact:infData', 'status'),
         ('epp', 'response', 'resData', 'contact:chkData', 'cd'),

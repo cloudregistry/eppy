@@ -97,7 +97,9 @@ class EppClient():
     def send(self, doc):
         self.write(str(doc))
         r = self.read()
-        return EppResponse.from_xml(r)
+        resp = EppResponse.from_xml(r)
+        doc.normalize_response(resp)
+        return resp
 
 
     def batchsend(self, docs, readresponse=True, failfast=True, pipeline=False):
