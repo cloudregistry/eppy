@@ -230,6 +230,32 @@ class EppInfoContactCommand(EppInfoCommand):
         dpath = dpath_get(dct, cls._path)
         return dct
 
+    def normalize_response(self, respdoc):
+        """
+        clean up voice and fax
+        """
+        super(EppInfoContactCommand, self).normalize_response(respdoc)
+        import json
+        print respdoc
+        print json.dumps(respdoc.resData, indent=4)
+        try:
+            voice = respdoc.resData['contact:infData']['voice']
+        except (AttributeError, KeyError):
+            pass
+        else:
+            if not isinstance(voice, dict):
+                respdoc.resData['contact:infData']['voice'] = {'_text': voice, '@x': ''}
+
+        try:
+            fax = respdoc.resData['contact:infData']['fax']
+        except (AttributeError, KeyError):
+            pass
+        else:
+            if not isinstance(fax, dict):
+                respdoc.resData['contact:infData']['fax'] = {'_text': fax, '@x': ''}
+
+
+
 
 class EppInfoHostCommand(EppInfoCommand):
     _path = EppInfoCommand._path + ('host:info',)
@@ -600,20 +626,20 @@ class EppTransferDomainCommand(EppTransferCommand):
 class EppResponse(EppDoc):
     _path = ('epp', 'response')
     _childorder = {'__order': ('result', 'msgQ', 'resData', 'extension', 'trID')}
-    _multi_nodes = set([
-        # If the command was processed successfully, only one <result>
-        # element MUST be returned. If the command was not processed
-        # successfully, multiple <result> elements MAY be returned to
-        # document failure conditions.
+    _multi_nodes = {
         ('epp', 'response', 'result'),
         ('epp', 'response', 'resData', 'domain:infData', 'status'),
+        ('epp', 'response', 'resData', 'domain:infData', 'ns', 'hostObj'),
+        ('epp', 'response', 'resData', 'domain:infData', 'host'),
         ('epp', 'response', 'resData', 'domain:chkData', 'cd'),
         ('epp', 'response', 'resData', 'host:infData', 'status'),
         ('epp', 'response', 'resData', 'host:infData', 'addr'),
         ('epp', 'response', 'resData', 'host:chkData', 'cd'),
         ('epp', 'response', 'resData', 'contact:infData', 'status'),
-        ('epp', 'response', 'resData', 'contact:chkData', 'cd'),
-    ])
+        ('epp', 'response', 'resData', 'contact:infData', 'postalInfo'),
+        ('epp', 'response', 'resData', 'contact:infData', 'postalInfo', 'addr', 'street'),
+        ('epp', 'response', 'resData', 'contact:chkData', 'cd')
+    }
 
     def __init__(self, dct=None, extra_nsmap={}):
         if dct is None:
