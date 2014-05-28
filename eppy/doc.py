@@ -11,6 +11,7 @@ EPP_NSMAP.update({
     'rgp': 'urn:ietf:params:xml:ns:rgp-1.0',
     'secDNS10': 'urn:ietf:params:xml:ns:secDNS-1.0',
     'secDNS': 'urn:ietf:params:xml:ns:secDNS-1.1',
+    'namestoreExt': 'http://www.verisign-grs.com/epp/namestoreExt-1.1',
 })
 
 
@@ -66,6 +67,14 @@ class EppCommand(EppDoc):
         if dct is None:
             dct = dpath_make(self._path)
         super(EppCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
+
+    def to_xml(self, childorder):
+        if hasattr(self, 'namestore_product') and self.namestore_product:
+            self['epp']['command'].setdefault(
+                'extension', {})['namestoreExt:namestoreExt'] = {'namestoreExt:subProduct': self.namestore_product}
+            del self.namestore_product
+        return super(EppCommand, self).to_xml(childorder)
+
 
     def normalize_response(self, respdoc):
         """
@@ -235,9 +244,6 @@ class EppInfoContactCommand(EppInfoCommand):
         clean up voice and fax
         """
         super(EppInfoContactCommand, self).normalize_response(respdoc)
-        import json
-        print respdoc
-        print json.dumps(respdoc.resData, indent=4)
         try:
             voice = respdoc.resData['contact:infData']['voice']
         except (AttributeError, KeyError):
@@ -448,6 +454,7 @@ class EppUpdateDomainCommand(EppUpdateCommand):
             update_data = [{k: v[0] if len(v) == 1 else v} for k, v in tmp_dict.iteritems()]
             secdns_data[update_data_key] = update_data
         self['epp']['command'].setdefault('extension', {})['secDNS:update'] = secdns_data
+        print self['epp']['command']
 
 
 class EppUpdateContactCommand(EppUpdateCommand):
