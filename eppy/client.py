@@ -8,6 +8,7 @@ except ImportError:
 
 import struct
 import logging
+from .exceptions import EppLoginError
 from .doc import EppResponse, EppHello, EppLoginCommand, EppLogoutCommand
 
 
@@ -39,7 +40,7 @@ class EppClient():
     def hello(self):
         return self.send(EppHello())
 
-    def login(self, clID, pw):
+    def login(self, clID, pw, raise_on_fail=True):
         if not self.sock:
             self.connect(self.host, self.port)
             self.greeting = EppResponse.from_xml(self.read())
@@ -47,8 +48,10 @@ class EppClient():
         cmd = EppLoginCommand()
         cmd.clID = clID
         cmd.pw = pw
-        return self.send(cmd)
-
+        r = self.send(cmd)
+        if not r.success and raise_on_fail:
+            raise EppLoginError(r)
+        return r
 
     def logout(self):
         cmd = EppLogoutCommand()
