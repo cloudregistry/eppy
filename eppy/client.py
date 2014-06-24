@@ -106,8 +106,11 @@ class EppClient():
 
 
     def send(self, doc):
-        self.write(str(doc))
+        buf = str(doc)
+        self.log.debug("SEND %s: %s", self.remote_info(), buf)
+        self.write(buf)
         r = self.read()
+        self.log.debug("RECV %s: %s", self.remote_info(), r)
         resp = EppResponse.from_xml(r)
         doc.normalize_response(resp)
         return resp
