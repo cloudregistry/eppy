@@ -8,18 +8,20 @@ except ImportError:
 
 import struct
 import logging
-from .exceptions import EppLoginError
+from .exceptions import EppLoginError, EppConnectionError
 from .doc import EppResponse, EppHello, EppLoginCommand, EppLogoutCommand
+from backports.ssl_match_hostname import match_hostname, CertificateError
 
 
 class EppClient():
-    def __init__(self, host=None, port=700, ssl_enable=True, ssl_keyfile=None, ssl_certfile=None, ssl_cacerts=None):
+    def __init__(self, host=None, port=700, ssl_enable=True, ssl_keyfile=None, ssl_certfile=None, ssl_cacerts=None, ssl_validate_hostname=True):
         self.host = host
         self.port = port
         self.ssl_enable = ssl_enable
         self.keyfile = ssl_keyfile
         self.certfile = ssl_certfile
         self.cacerts = ssl_cacerts
+        self.validate_hostname = ssl_validate_hostname
         self.log = logging.getLogger(__name__)
         self.sock = None
         self.greeting = None
@@ -31,6 +33,12 @@ class EppClient():
         self._sock = self.sock
         if self.ssl_enable:
             self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile, server_side=False, cert_reqs=ssl.CERT_REQUIRED, ca_certs=self.cacerts)
+            if self.validate_hostname:
+                try:
+                    match_hostname(self.sock.getpeercert(), host)
+                except CertificateError, e:
+                    self.log.exception("SSL hostname mismatch")
+                    raise EppConnectionError(str(e))
 
 
     def remote_info(self):

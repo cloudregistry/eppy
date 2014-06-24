@@ -11,5 +11,8 @@ class EppException(Exception):
         super(EppException, self).__init__(msg)
 
 
+class EppConnectionError(EppException):
+    pass
+
 class EppLoginError(EppException):
     pass
