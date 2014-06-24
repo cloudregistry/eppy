@@ -16,71 +16,54 @@ EPP_NSMAP.update({
 
 
 class EppDoc(XmlDictObject):
-    def __init__(self, dct=None, extra_nsmap={}):
+    def __init__(self, dct=None, extra_nsmap=None):
         # NOTE: setting attributes in __init__ will require special handling, see XmlDictObject
         nsmap = EPP_NSMAP.copy()
-        nsmap.update(extra_nsmap)
+        nsmap.update(extra_nsmap or {})
+        if not dct:
+            dct = dpath_make(self._path)
         super(EppDoc, self).__init__(dct, nsmap=nsmap)
 
-
-    def __unicode__(self):
+    def to_xml(self, force_prefix):
         # build a dictionary containing the definition of the order that child elements should be serialized
         # NOTE: this does not contain the root element
         # ``self._childorder`` is defined relative to self._path, so we do some tree grafting here
         qualified_childorder = dpath_make(self._path[1:])
         dpath_get(qualified_childorder, self._path[1:-1])[self._path[-1]] = self._childorder
-        return self.to_xml(qualified_childorder)
+        return super(EppDoc, self).to_xml(qualified_childorder, force_prefix=force_prefix)
 
+    def __unicode__(self):
+        return self.to_xml(force_prefix=False)
 
     def __str__(self):
         return unicode(self).encode('utf-8')
-
 
     @classmethod
     def from_xml(cls, buf, default_prefix='epp'):
         return super(EppDoc, cls).from_xml(buf, default_prefix=default_prefix)
 
-
-class EppHello(EppDoc):
-    _path = ('epp', 'hello')
-
-    def __init__(self, dct=None, extra_nsmap={}):
-        if dct is None:
-            dct = {
-                'epp': {
-                    'hello': {}
-                }
-            }
-        super(EppHello, self).__init__(dct, extra_nsmap=extra_nsmap)
-
     def normalize_response(self, respdoc):
         """
         perform any cleanup of a response document resulting from this command
         """
         pass
+
+
+class EppHello(EppDoc):
+    _path = ('epp', 'hello')
 
 
 class EppCommand(EppDoc):
     _path = ('epp', 'command')
 
-    def __init__(self, dct=None, extra_nsmap={}):
-        if dct is None:
-            dct = dpath_make(self._path)
-        super(EppCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
-
-    def to_xml(self, childorder):
+    def to_xml(self, force_prefix):
         if hasattr(self, 'namestore_product') and self.namestore_product:
             self['epp']['command'].setdefault(
                 'extension', {})['namestoreExt:namestoreExt'] = {'namestoreExt:subProduct': self.namestore_product}
             del self.namestore_product
-        return super(EppCommand, self).to_xml(childorder)
+        return super(EppCommand, self).to_xml(force_prefix)
 
 
-    def normalize_response(self, respdoc):
-        """
-        perform any cleanup of a response document resulting from this command
-        """
-        pass
 
 
 class EppLoginCommand(EppCommand):
@@ -104,63 +87,22 @@ class EppLoginCommand(EppCommand):
         login['options']['_order'] = ['version', 'lang']
         super(EppLoginCommand, self).__init__(dct)
 
-    def to_xml(self, childorder):
+    def to_xml(self, force_prefix):
         if not hasattr(self, 'svcs'):
             self.svcs = dict(objURI=self._nsmap_r.keys())
-        return super(EppLoginCommand, self).to_xml(childorder)
+        return super(EppLoginCommand, self).to_xml(force_prefix=force_prefix)
 
 
 class EppLogoutCommand(EppCommand):
     _path = ('epp', 'command', 'logout')
 
-    def __init__(self):
-        dct = {
-                'epp': {
-                    'command': {
-                        'logout': {},
-                        },
-                    },
-                }
-
-        super(EppLogoutCommand, self).__init__(dct)
-
-    def to_xml(self, childorder):
-        return super(EppLogoutCommand, self).to_xml(childorder)
-
 
 class EppCheckCommand(EppCommand):
-    def __init__(self, dct=None, path=['epp', 'command', 'check']):
-        if dct is None:
-            dct = {
-                    'epp': {
-                        'command': {
-                            'check': {},
-                            },
-                        },
-                    }
-
-        super(EppCheckCommand, self).__init__(dct, path=path)
+    _path = ('epp', 'command', 'check')
 
 
 class EppCheckDomainCommand(EppCommand):
     _path = ('epp', 'command', 'check', 'domain:check')
-    def __init__(self, dct=None, domains=None):
-        if dct is None:
-            if domains is None:
-                domains = []
-            elif isinstance(domains, basestring):
-                domains = [domains]
-            dct = {
-                    'epp': {
-                        'command': {
-                            'check': {
-                                'domain:check': {'name': list(domains)}
-                                },
-                            },
-                        },
-                    }
-
-        super(EppCheckDomainCommand, self).__init__(dct)
 
 
 class EppCheckHostCommand(EppCommand):

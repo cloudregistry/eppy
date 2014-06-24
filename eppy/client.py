@@ -106,7 +106,7 @@ class EppClient():
 
 
     def send(self, doc):
-        buf = str(doc)
+        buf = doc.to_xml(force_prefix=True).encode('utf-8')
         self.log.debug("SEND %s: %s", self.remote_info(), buf)
         self.write(buf)
         r = self.read()

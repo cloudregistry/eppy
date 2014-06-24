@@ -136,8 +136,8 @@ class XmlDictObject(dict):
             return x
 
 
-    def to_xml(self, childorder):
-        el = dict2xml(self, childorder)
+    def to_xml(self, childorder, force_prefix=False):
+        el = dict2xml(self, childorder, force_prefix=force_prefix)
         indent(el)
         return ElementTree.tostring(el)
 
@@ -153,69 +153,90 @@ class XmlDictObject(dict):
         return XmlDictObject._unwrap(self)
 
 
-def _dict2xml_recurse(parent, dictitem, nsmap, current_prefixes, childorder):
+def _dict2xml_recurse(parent, dictitem, nsmap, current_prefixes, childorder, force_prefix=False):
     """
     :param nsmap: is a dict, can be `{}`
     :param current_prefixes: is a set
     :param childorder: is a dict, can be `{}`
     """
-    assert type(dictitem) is not type(list) # XXX: this looks wrong, should it be just `list`?
+    if '_order' in dictitem or '__order' in childorder:
+        ordr = dictitem.get('_order') or childorder['__order']
+        nodeorder = dict((name, i) for i,name in enumerate(ordr))
+        items = sorted(dictitem.iteritems(), key=lambda x: nodeorder.get(x[0].split(":")[-1], 0))
+    else:
+        items = dictitem.iteritems()
 
-    #print "_dict2xml_recurse(%r)" % (dictitem,)
-    #print "nsmap=%r" % (nsmap,)
-    #import ipdb; ipdb.set_trace()
-    if isinstance(dictitem, dict):
-        if '_order' in dictitem or '__order' in childorder:
-            ordr = dictitem.get('_order') or childorder['__order']
-            nodeorder = dict((name, i) for i,name in enumerate(ordr))
-            items = sorted(list(dictitem.iteritems()), key=lambda x: nodeorder.get(x[0].split(":")[-1], 0))
-        else:
-            items = list(dictitem.iteritems())
-        for (tag, child) in items:
-            #print "tag=%r" % tag
-            if str(tag) in ('_order', '_nsmap'):
-                continue
-            if str(tag) == '_text':
-                parent.text = str(child)
-            elif str(tag).startswith("@"):
-                _do_xmlns(parent, str(tag)[1:], current_prefixes, nsmap, set_default_ns=False)
-                parent.set(str(tag)[1:], str(child))
-            elif type(child) in (list, tuple):
-                for listchild in child:
+    for (tag, child) in items:
+        if tag in ('_order', '_nsmap'):
+            continue
+        if tag == '_text':
+            parent.text = str(child)
+        elif tag.startswith("@"):
+            attrname = tag[1:]
+            _do_xmlns(parent, attrname, current_prefixes, nsmap, set_default_ns=False)
+            parent.set(attrname, unicode(child))
+        elif type(child) in (list, tuple):
+            for listchild in child:
+                nsmap_recurs = nsmap
+                prefixes_recurs = current_prefixes.copy()
+                if ":" in tag:
                     elem = ElementTree.Element(tag)
-                    nsmap_recurs = nsmap
-                    prefixes_recurs = current_prefixes
-                    if ":" in tag:
-                        prefix, uri = _do_xmlns(elem, tag, current_prefixes, nsmap)
-                        if uri: # we will change the default namespace for children with no prefix
-                            # so we need to make copies of nsmap and current_prefixes instead of updating in-place
-                            nsmap_recurs = nsmap.copy()
+                    prefix, uri = _do_xmlns(elem, tag, current_prefixes, nsmap, set_default_ns=not force_prefix)
+                    if uri: # we will change the default namespace for children with no prefix
+                        # so we need to make copies of nsmap and current_prefixes instead of updating in-place
+                        nsmap_recurs = nsmap.copy()
+                        if not force_prefix:
                             nsmap_recurs[''] = uri
-                            prefixes_recurs = current_prefixes.union([prefix])
-                    parent.append(elem)
+                        prefixes_recurs = current_prefixes.union([prefix])
+                elif force_prefix:
+                    # tag has no prefix, take parent's
+                    parent_prefix = parent.tag.split(':')[0] if ':' in parent.tag else ''
+                    if parent_prefix:
+                        tag = '%s:%s' % (parent_prefix, tag)
+                    elem = ElementTree.Element(tag)
+                else:
+                    elem = ElementTree.Element(tag)
+
+                parent.append(elem)
+                if isinstance(listchild, dict):
                     _dict2xml_recurse(elem,
                                       listchild,
                                       nsmap=nsmap_recurs,
                                       current_prefixes=prefixes_recurs,
-                                      childorder=childorder.get(tag, {}))
-            else:                
+                                      childorder=childorder.get(tag, {}),
+                                      force_prefix=force_prefix)
+                else:
+                    elem.text = unicode(listchild)
+        else:
+            nsmap_recurs = nsmap
+            prefixes_recurs = current_prefixes.copy()
+            if ":" in tag:
                 elem = ElementTree.Element(tag)
-                parent.append(elem)
-                nsmap_recurs = nsmap
-                prefixes_recurs = current_prefixes
-                if ":" in tag:
-                    prefix, uri = _do_xmlns(elem, tag, current_prefixes, nsmap)
-                    if uri: # we will change the default namespace for children with no prefix
-                        nsmap_recurs = nsmap.copy()
+                prefix, uri = _do_xmlns(elem, tag, current_prefixes, nsmap, set_default_ns=not force_prefix)
+                if uri: # we will change the default namespace for children with no prefix
+                    nsmap_recurs = nsmap.copy()
+                    if not force_prefix:
                         nsmap_recurs[''] = uri
-                        prefixes_recurs = current_prefixes.union([prefix])
+                    prefixes_recurs = current_prefixes.union([prefix])
+            elif force_prefix:
+                # tag has no prefix, take parent's
+                parent_prefix = parent.tag.split(':')[0] if ':' in parent.tag else ''
+                if parent_prefix:
+                    tag = '%s:%s' % (parent_prefix, tag)
+                elem = ElementTree.Element(tag)
+            else:
+                elem = ElementTree.Element(tag)
+
+            parent.append(elem)
+            if isinstance(child, dict):
                 _dict2xml_recurse(elem,
                                   child,
                                   nsmap=nsmap_recurs,
                                   current_prefixes=prefixes_recurs,
-                                  childorder=childorder.get(tag, {}))
-    else:
-        parent.text = unicode(dictitem)
+                                  childorder=childorder.get(tag, {}),
+                                  force_prefix=force_prefix)
+            else:
+                elem.text = unicode(child)
 
 
 def _do_xmlns(elem, tag, prefixes, nsmap, set_default_ns=True):
@@ -240,7 +261,7 @@ def _do_xmlns(elem, tag, prefixes, nsmap, set_default_ns=True):
     return prefix, uri
 
 
-def dict2xml(xmldict, childorder):
+def dict2xml(xmldict, childorder, force_prefix=False):
     """convert a python dictionary into an XML tree"""
     roottag = filter(lambda x: not x.startswith("_"), xmldict.keys())[0]
     root = ElementTree.Element(roottag)
@@ -251,8 +272,11 @@ def dict2xml(xmldict, childorder):
         prefix, uri = _do_xmlns(root, roottag, prefixes, nsmap)
         if uri:
             prefixes.add(prefix)
-    #print "dict2xml(%r, roottag=%r)" % (xmldict, roottag)
-    _dict2xml_recurse(root, xmldict[roottag], current_prefixes=prefixes, nsmap=nsmap, childorder=childorder)
+    _dict2xml_recurse(root, xmldict[roottag],
+                      current_prefixes=prefixes,
+                      nsmap=nsmap,
+                      childorder=childorder,
+                      force_prefix=force_prefix)
     return root
 
 
@@ -288,7 +312,6 @@ def get_prefixed_name(nsmap_r, name):
 
 def _xml2dict_recurse(node, nodedict, dictclass, nsmap, nsmap_r, default_prefix=None, parent_path=None, multi_nodes=None):
     parent_path = parent_path or tuple()
-    #print "nodedict = %r" % (nodedict,)
     if len(node.items()) > 0:
         # if we have attributes, set them
         ## wil/rem nodedict.update(dict(node.items()))
@@ -345,7 +368,6 @@ def xml2dict(root, dictclass=XmlDictObject, initialclass=XmlDictObject, default_
     """convert an xml tree into a python dictionary
     """
     rootnode = dictclass()
-
     # we cheat a bit, instantiate it to get the nsmap and nsmap_r
     if not nsmap:
         tmp = initialclass()
