@@ -371,12 +371,12 @@ class EppUpdateDomainCommand(EppUpdateCommand):
     def add_secdns_data(self, data):
         secdns_data = dict()
         for action, value in data.iteritems():
-            update_data_key = 'secDNS:{}'.format(action)
+            update_data_key = 'secDNS:%s' % action
             update_data = list()
             tmp_dict = dict()
             for item in value:
                 record_type = item['type']
-                record_key = 'secDNS:{}Data'.format(record_type)
+                record_key = 'secDNS:%sData' % record_type
                 if record_type == 'maxSigLife':
                     update_data.append({record_key: [item['value'], ]})
                     continue
@@ -384,7 +384,7 @@ class EppUpdateDomainCommand(EppUpdateCommand):
                     order = ['keyTag', 'alg', 'digestType', 'digest']
                 else:
                     order = ['flags', 'protocol', 'alg', 'pubKey']
-                record_data = {'secDNS:{}'.format(k): v for k, v in item['data'].iteritems()}
+                record_data = dict(('secDNS:%s' % k, v) for k, v in item['data'].iteritems())
                 record_data['_order'] = order
                 update_data.append({record_key: record_data})
             for item in update_data:
