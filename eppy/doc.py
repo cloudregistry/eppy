@@ -575,7 +575,11 @@ class EppTransferDomainCommand(EppTransferCommand):
 class EppResponse(EppDoc):
     _path = ('epp', 'response')
     _childorder = {'__order': ('result', 'msgQ', 'resData', 'extension', 'trID')}
-    _multi_nodes = {
+    _multi_nodes = set([
+        # If the command was processed successfully, only one <result>
+        # element MUST be returned. If the command was not processed
+        # successfully, multiple <result> elements MAY be returned to
+        # document failure conditions.
         ('epp', 'response', 'result'),
         ('epp', 'response', 'resData', 'domain:infData', 'status'),
         ('epp', 'response', 'resData', 'domain:infData', 'ns', 'hostObj'),
@@ -588,7 +592,7 @@ class EppResponse(EppDoc):
         ('epp', 'response', 'resData', 'contact:infData', 'postalInfo'),
         ('epp', 'response', 'resData', 'contact:infData', 'postalInfo', 'addr', 'street'),
         ('epp', 'response', 'resData', 'contact:chkData', 'cd')
-    }
+    ])
 
     def __init__(self, dct=None, extra_nsmap={}):
         if dct is None:
