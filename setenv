@@ -13,11 +13,11 @@ export EPPY_BASE
 PATH=$EPPY_BASE/bin:$PATH
 export PATH
 
-. $EPPY_BASE/root/bin/activate
+. $EPPY_BASE/venv/bin/activate
 
 PYTHONPATH=$EPPY_BASE/src
 
-PS1="[eppy]"`echo $PS1 | sed -e 's/^(root)//'`" "
+PS1="[eppy]"`echo $PS1 | sed -e 's/^(venv)//'`" "
 
 if [ "x$1" != "x" ]; then
 	exec "$@"
