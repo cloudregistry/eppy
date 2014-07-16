@@ -8,7 +8,7 @@
 __doc__ = """\
 functions to convert an XML file into a python dict, back and forth
 """
-__author__ = "Wil Tan <http://cloudregistry.net/people/wil>"
+__author__ = "Wil Tan <wil@cloudregistry.net>"
 
 from StringIO import StringIO
 
@@ -46,26 +46,27 @@ _BASE_NSMAP = {
 
 ## module implementation ------------------------------------------------------
 class XmlDictObject(dict):
-    _nsmap = _BASE_NSMAP
-    _nsmap_r = {}
     _path = ()
     _childorder = {} # relative to _path; only useful if defined at the same level at which _path is defined/overridden
 
-    def __init__(self, initdict=None, nsmap=None):
+    def __init__(self, initdict=None, nsmap=None, extra_nsmap=None):
         # NOTE: setting attributes in __init__ will require special handling, see XmlDictObject
         if initdict is None:
             initdict = {}
         dict.__init__(self, initdict)
 
-        if nsmap is not None:
-            self._nsmap = nsmap
-            nsmap_r = {}
-            # build reverse map
-            for prefix, uri in nsmap.iteritems():
-                if uri in nsmap_r and not prefix: # default prefix should not override anything already in the rmap
-                    continue
-                nsmap_r[uri] = prefix
-            self._nsmap_r = nsmap_r
+        if nsmap is None:
+            nsmap = self._nsmap = _BASE_NSMAP.copy()
+        nsmap.update(extra_nsmap or {})
+        self._nsmap = nsmap
+
+        nsmap_r = {}
+        # build reverse map
+        for prefix, uri in nsmap.iteritems():
+            if uri in nsmap_r and not prefix: # default prefix should not override anything already in the rmap
+                continue
+            nsmap_r[uri] = prefix
+        self._nsmap_r = nsmap_r
 
         self.__initialized = True
 
@@ -143,9 +144,9 @@ class XmlDictObject(dict):
 
 
     @classmethod
-    def from_xml(cls, buf, default_prefix=None):
+    def from_xml(cls, buf, default_prefix=None, extra_nsmap=None):
         root = ElementTree.parse(StringIO(buf)).getroot()
-        rv = xml2dict(root, initialclass=cls, default_prefix=default_prefix, multi_nodes=cls._multi_nodes)
+        rv = xml2dict(root, outerclass=cls, default_prefix=default_prefix, multi_nodes=cls._multi_nodes, extra_nsmap=extra_nsmap)
         return rv
 
         
@@ -364,25 +365,21 @@ def _xml2dict_recurse(node, nodedict, dictclass, nsmap, nsmap_r, default_prefix=
     return nodedict
 
 
-def xml2dict(root, dictclass=XmlDictObject, initialclass=XmlDictObject, default_prefix=None, nsmap={}, nsmap_r={}, multi_nodes=None):
+def xml2dict(root, dictclass=XmlDictObject, outerclass=XmlDictObject, default_prefix=None, multi_nodes=None, extra_nsmap=None):
     """convert an xml tree into a python dictionary
     """
     rootnode = dictclass()
     # we cheat a bit, instantiate it to get the nsmap and nsmap_r
-    if not nsmap:
-        tmp = initialclass()
-        nsmap = tmp._nsmap
-        nsmap_r = tmp._nsmap_r
 
-    if not nsmap_r:
-        # build reverse map
-        for prefix, uri in nsmap.iteritems():
-            if uri in nsmap_r and not prefix: # default prefix should not override anything already in the rmap
-                continue
-            nsmap_r[uri] = prefix
+    outer = outerclass(extra_nsmap=extra_nsmap)
+    nsmap = outer._nsmap
+    nsmap_r = outer._nsmap_r
 
     tag, default_prefix = _compute_prefix(root.tag, nsmap_r, default_prefix)
-    return initialclass({tag: _xml2dict_recurse(root, rootnode, dictclass, nsmap=nsmap, nsmap_r=nsmap_r, default_prefix=default_prefix, parent_path=(tag,), multi_nodes=multi_nodes)})
+    outer[tag] = _xml2dict_recurse(root, rootnode, dictclass, nsmap=nsmap, nsmap_r=nsmap_r,
+                                   default_prefix=default_prefix, parent_path=(tag,),
+                                   multi_nodes=multi_nodes)
+    return outer
 
 
 def indent(elem, level=0):
@@ -400,88 +397,3 @@ def indent(elem, level=0):
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
 
-
-
-if __name__ == '__main__':
-    try:
-        from simplejson import dumps as json_encode
-    except ImportError:
-        from json import dumps as json_encode
-
-    def from_xml(filename):
-        root = ElementTree.parse(filename).getroot()
-        epp = xml2dict(root)
-        return epp
-
-    """
-    epp = from_xml('/dev/stdin')
-    print ElementTree.tostring(dict2xml(epp))
-    print json_encode([epp, xml2dict(dict2xml(epp))])
-    """
-
-    EPP_NSMAP = {
-            '': 'urn:ietf:params:xml:ns:epp-1.0',
-            'epp': 'urn:ietf:params:xml:ns:epp-1.0',
-            'domain': 'urn:ietf:params:xml:ns:domain-1.0',
-            'contact': 'urn:ietf:params:xml:ns:contact-1.0',
-            'host': 'urn:ietf:params:xml:ns:host-1.0',
-            }
-
-    eppdict = XmlDictObject(dict(epp={
-        'command': {
-            'epp:create': {
-                #'{urn:ietf:params:xml:ns:domain-1.0}create': {
-                'domain:create': {
-                    '_order': ['name', 'period', 'ns', 'registrant', 'contact', 'authInfo'],
-                    #'@xmlns:domain': 'urn:ietf:params:xml:ns:domain-1.0',
-                    'name': 'hello.com',
-                    'domain:registrant': 'wil001',
-                    'contact': [
-                        {'@type': 'admin', '_text': 'wil001a'},
-                        {'@type': 'billing', '_text': 'wil001b'},
-                        ],
-                    'ns': {
-                        'hostObj': [
-                            'ns1.example.com',
-                            'ns2.example.com',
-                            ]
-                        },
-                    'authInfo': {
-                        'pw': 'fooBar'
-                        }
-                    }
-                }
-            }
-            }), EPP_NSMAP)
-    print ElementTree.tostring(dict2xml(eppdict))
-    import sys
-    sys.exit(0)
-
-    eppdict = XmlDictObject.wrap(dict(epp={
-        'command': {
-            'create': {
-                #'{urn:ietf:params:xml:ns:domain-1.0}create': {
-                'domain:create': {
-                    #'@xmlns:domain': 'urn:ietf:params:xml:ns:domain-1.0',
-                    'name': 'hello.com',
-                    'registrant': 'wil001',
-                    'contact': [
-                        {'@type': 'admin', '_text': 'wil001a'},
-                        {'@type': 'billing', '_text': 'wil001b'},
-                        ],
-                    'ns': {
-                        'hostObj': [
-                            'ns1.example.com',
-                            'ns2.example.com',
-                            ]
-                        }
-                    }
-                }
-            }
-            }))
-    eppdict._nsmap = EPP_NSMAP
-
-    print eppdict.epp.command.create['domain:create'].name
-    #eppdict = XmlDictObject()
-    #eppdict.epp.command.create['domain:create'].name = 'kitty.net'
-    print ElementTree.tostring(dict2xml(eppdict))

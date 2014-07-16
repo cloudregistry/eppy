@@ -12,17 +12,18 @@ EPP_NSMAP.update({
     'secDNS10': 'urn:ietf:params:xml:ns:secDNS-1.0',
     'secDNS': 'urn:ietf:params:xml:ns:secDNS-1.1',
     'namestoreExt': 'http://www.verisign-grs.com/epp/namestoreExt-1.1',
+    'launch': 'urn:ietf:params:xml:ns:launch-1.0',
 })
 
 
 class EppDoc(XmlDictObject):
-    def __init__(self, dct=None, extra_nsmap=None):
+    def __init__(self, dct=None, nsmap=None, extra_nsmap=None):
         # NOTE: setting attributes in __init__ will require special handling, see XmlDictObject
-        nsmap = EPP_NSMAP.copy()
-        nsmap.update(extra_nsmap or {})
+        if not nsmap:
+            nsmap = EPP_NSMAP.copy()
         if not dct:
             dct = dpath_make(self._path)
-        super(EppDoc, self).__init__(dct, nsmap=nsmap)
+        super(EppDoc, self).__init__(dct, nsmap=nsmap, extra_nsmap=extra_nsmap)
 
     def to_xml(self, force_prefix):
         # build a dictionary containing the definition of the order that child elements should be serialized
@@ -39,8 +40,8 @@ class EppDoc(XmlDictObject):
         return unicode(self).encode('utf-8')
 
     @classmethod
-    def from_xml(cls, buf, default_prefix='epp'):
-        return super(EppDoc, cls).from_xml(buf, default_prefix=default_prefix)
+    def from_xml(cls, buf, default_prefix='epp', extra_nsmap=None):
+        return super(EppDoc, cls).from_xml(buf, default_prefix=default_prefix, extra_nsmap=extra_nsmap)
 
     def normalize_response(self, respdoc):
         """
@@ -591,10 +592,11 @@ class EppResponse(EppDoc):
         ('epp', 'response', 'resData', 'contact:infData', 'status'),
         ('epp', 'response', 'resData', 'contact:infData', 'postalInfo'),
         ('epp', 'response', 'resData', 'contact:infData', 'postalInfo', 'addr', 'street'),
-        ('epp', 'response', 'resData', 'contact:chkData', 'cd')
+        ('epp', 'response', 'resData', 'contact:chkData', 'cd'),
+        ('epp', 'response', 'extension', 'launch:chkData', 'cd'),
     ])
 
-    def __init__(self, dct=None, extra_nsmap={}):
+    def __init__(self, dct=None, extra_nsmap=None):
         if dct is None:
             dct = {'epp': {'response': {}}}
         super(EppResponse, self).__init__(dct, extra_nsmap=extra_nsmap)
@@ -661,7 +663,7 @@ if __name__ == '__main__':
     print xml
 
     root = ElementTree.parse(StringIO(xml)).getroot()
-    cmd2 = xml2dict(root, initialclass=EppCreateDomainCommand, default_prefix="epp")
+    cmd2 = xml2dict(root, outerclass=EppCreateDomainCommand, default_prefix="epp")
     print repr(cmd2)
     print json_encode(cmd2)
 
