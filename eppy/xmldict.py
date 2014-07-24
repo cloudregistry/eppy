@@ -48,6 +48,7 @@ _BASE_NSMAP = {
 class XmlDictObject(dict):
     _path = ()
     _childorder = {} # relative to _path; only useful if defined at the same level at which _path is defined/overridden
+    _multi_nodes = set()
 
     def __init__(self, initdict=None, nsmap=None, extra_nsmap=None):
         # NOTE: setting attributes in __init__ will require special handling, see XmlDictObject
