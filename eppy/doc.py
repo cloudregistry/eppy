@@ -193,7 +193,7 @@ class EppInfoContactCommand(EppInfoCommand):
             pass
         else:
             if not isinstance(voice, dict):
-                respdoc.resData['contact:infData']['voice'] = {'_text': voice, '@x': ''}
+                respdoc.resData['contact:infData']['voice'] = {'_text': voice}
 
         try:
             fax = respdoc.resData['contact:infData']['fax']
@@ -201,7 +201,7 @@ class EppInfoContactCommand(EppInfoCommand):
             pass
         else:
             if not isinstance(fax, dict):
-                respdoc.resData['contact:infData']['fax'] = {'_text': fax, '@x': ''}
+                respdoc.resData['contact:infData']['fax'] = {'_text': fax}
 
 
 
