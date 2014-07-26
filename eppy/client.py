@@ -14,10 +14,16 @@ from backports.ssl_match_hostname import match_hostname, CertificateError
 
 
 class EppClient():
-    def __init__(self, host=None, port=700, ssl_enable=True, ssl_keyfile=None, ssl_certfile=None, ssl_cacerts=None, ssl_validate_hostname=True):
+    def __init__(self, host=None, port=700,
+                 ssl_enable=True, ssl_keyfile=None, ssl_certfile=None, ssl_cacerts=None,
+                 ssl_version=ssl.PROTOCOL_SSLv23,
+                 ssl_validate_hostname=True):
         self.host = host
         self.port = port
         self.ssl_enable = ssl_enable
+        # PROTOCOL_SSLv23 gives the best proto version available (including TLSv1 and above)
+        # SSLv2 should be disabled by most OpenSSL build
+        self.ssl_version = ssl_version
         self.keyfile = ssl_keyfile
         self.certfile = ssl_certfile
         self.cacerts = ssl_cacerts
@@ -32,7 +38,13 @@ class EppClient():
         self.sock.connect((host, port or self.port))
         self._sock = self.sock
         if self.ssl_enable:
-            self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile, server_side=False, cert_reqs=ssl.CERT_REQUIRED, ca_certs=self.cacerts)
+            self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile,
+                                        ssl_version=self.ssl_version,
+                                        server_side=False,
+                                        cert_reqs=ssl.CERT_REQUIRED,
+                                        ca_certs=self.cacerts)
+
+            print self._get_ssl_protocol_version()
             if self.validate_hostname:
                 try:
                     match_hostname(self.sock.getpeercert(), host)
@@ -199,3 +211,48 @@ class EppClient():
     def close(self):
         self._sock.close()
 
+    def _get_ssl_protocol_version(self):
+        """
+        This is a hack to get the negotiated protocol version of an SSL connection.
+
+        WARNING: Do not use this on anything other than Python 2.7
+        WARNING: Do not use on non-CPython.
+        WARNING: only use it for debugging.
+        WARNING: this will probably crash because we may be loading the wrong version of libssl
+
+        From https://github.com/python-git/python/blob/master/Modules/_ssl.c
+        the PySSLObject struct looks like this:
+
+        typedef struct {
+            PyObject_HEAD
+            PySocketSockObject *Socket;	/* Socket on which we're layered */
+            SSL_CTX*	ctx;
+            SSL*		ssl;
+            X509*		peer_cert;
+            char		server[X509_NAME_MAXLEN];
+            char		issuer[X509_NAME_MAXLEN];
+
+        } PySSLObject;
+
+        and this is stored as self.sock._sslobj so we pry open the mem location
+        and call OpenSSL's SSL_get_version C API
+
+        This technique is inspired by http://pyevolve.sourceforge.net/wordpress/?p=2171
+        """
+        assert self.ssl_enable, "don't use it on non-SSL sockets"
+        assert self.sock._sslobj, "don't use it on non-SSL sockets"
+
+        import ctypes
+        import ctypes.util
+
+        size_pyobject_head = ctypes.sizeof(ctypes.c_long) + ctypes.sizeof(ctypes.c_voidp)
+        real_ssl_offset = size_pyobject_head + ctypes.sizeof(ctypes.c_voidp) * 2 # skip PySocketSockObject* and SSL_CTX*
+        ssl_p = ctypes.c_voidp.from_address(id(self.sock._sslobj) + real_ssl_offset)
+        # libssl = ctypes.cdll.LoadLibrary('/usr/local/opt/openssl/lib/libssl.1.0.0.dylib')
+        libssl = ctypes.cdll.LoadLibrary(ctypes.util.find_library('ssl'))
+        if not libssl:
+            return None
+        libssl.SSL_get_version.restype = ctypes.c_char_p
+        libssl.SSL_get_version.argtypes = [ctypes.c_void_p]
+        ver = libssl.SSL_get_version(ssl_p)
+        return ver
