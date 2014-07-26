@@ -64,6 +64,8 @@ class EppCommand(EppDoc):
             del self.namestore_product
         return super(EppCommand, self).to_xml(force_prefix)
 
+    def add_command_extension(self, ext_dict):
+        self['epp']['command'].setdefault('extension', {}).update(ext_dict)
 
 
 
@@ -601,7 +603,6 @@ class EppResponse(EppDoc):
             dct = {'epp': {'response': {}}}
         super(EppResponse, self).__init__(dct, extra_nsmap=extra_nsmap)
 
-
     @property
     def code(self):
         return self.result[0]['@code']
@@ -626,6 +627,12 @@ class EppResponse(EppDoc):
     def first_result(self):
         return self.result[0].msg
 
+    @property
+    def response_extension(self):
+        return self['epp']['response']['extension']
+
+    def get_response_extension(self, key):
+        return self.response_extension[key]
 
 
 def dpath_get(dct, path, default=None):

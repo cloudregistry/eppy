@@ -79,7 +79,7 @@ class XmlDictObject(dict):
         if item in it:
             return it[item]
         else:
-            raise AttributeError("no such node (%s/%s) in: %s" % ('/'.join(self._path), item, self))
+            raise AttributeError("no such node (%s/%s) in: %r (self=%s)" % ('/'.join(self._path), item, it, self))
 
 
     def __setattr__(self, item, value):
