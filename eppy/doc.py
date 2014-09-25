@@ -2,13 +2,19 @@ from eppy.xmldict import XmlDictObject, _BASE_NSMAP, dict2xml, ElementTree
 from . import childorder
 
 EPP_NSMAP = dict(_BASE_NSMAP)
+EPP_STD_OBJECTS_MAP = {
+    'domain': 'urn:ietf:params:xml:ns:domain-1.0',
+    'host': 'urn:ietf:params:xml:ns:host-1.0',
+    'contact': 'urn:ietf:params:xml:ns:contact-1.0',
+}
+EPP_STD_EXT_MAP = {
+    'rgp': 'urn:ietf:params:xml:ns:rgp-1.0',
+}
+EPP_NSMAP.update(EPP_STD_OBJECTS_MAP)
+EPP_NSMAP.update(EPP_STD_EXT_MAP)
 EPP_NSMAP.update({
     '': 'urn:ietf:params:xml:ns:epp-1.0',
     'epp': 'urn:ietf:params:xml:ns:epp-1.0',
-    'domain': 'urn:ietf:params:xml:ns:domain-1.0',
-    'contact': 'urn:ietf:params:xml:ns:contact-1.0',
-    'host': 'urn:ietf:params:xml:ns:host-1.0',
-    'rgp': 'urn:ietf:params:xml:ns:rgp-1.0',
     'secDNS10': 'urn:ietf:params:xml:ns:secDNS-1.0',
     'secDNS': 'urn:ietf:params:xml:ns:secDNS-1.1',
     'namestoreExt': 'http://www.verisign-grs.com/epp/namestoreExt-1.1',
@@ -92,7 +98,7 @@ class EppLoginCommand(EppCommand):
 
     def to_xml(self, force_prefix):
         if not hasattr(self, 'svcs'):
-            self.svcs = dict(objURI=self._nsmap_r.keys())
+            self.svcs = dict(objURI=EPP_STD_OBJECTS_MAP.values())
         return super(EppLoginCommand, self).to_xml(force_prefix=force_prefix)
 
 
