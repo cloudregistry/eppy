@@ -9,7 +9,9 @@ except ImportError:
 import struct
 import logging
 from .exceptions import EppLoginError, EppConnectionError
-from .doc import EppResponse, EppHello, EppLoginCommand, EppLogoutCommand
+from .doc import (EppResponse, EppHello, EppLoginCommand, EppLogoutCommand,
+                  EppCreateCommand, EppUpdateCommand, EppRenewCommand, EppTransferCommand, EppDeleteCommand)
+from .utils import gen_trid
 from backports.ssl_match_hostname import match_hostname, CertificateError
 
 
@@ -47,8 +49,6 @@ class EppClient():
                                         server_side=False,
                                         cert_reqs=ssl.CERT_REQUIRED,
                                         ca_certs=self.cacerts)
-
-            print self._get_ssl_protocol_version()
             if self.validate_hostname:
                 try:
                     match_hostname(self.sock.getpeercert(), host)
@@ -120,8 +120,8 @@ class EppClient():
         writemeth(''.join(buf))
 
 
-
     def send(self, doc):
+        self._gen_cltrid(doc)
         buf = doc.to_xml(force_prefix=True).encode('utf-8')
         self.log.debug("SEND %s: %s", self.remote_info(), buf)
         self.write(buf)
@@ -214,6 +214,12 @@ class EppClient():
 
     def close(self):
         self._sock.close()
+
+    def _gen_cltrid(self, doc):
+        if isinstance(doc, (EppLoginCommand, EppCreateCommand, EppUpdateCommand, EppDeleteCommand, EppTransferCommand, EppRenewCommand)):
+            cmd_node = doc['epp']['command']
+            if not cmd_node.get('clTRID'):
+                cmd_node['clTRID'] = gen_trid()
 
     def _get_ssl_protocol_version(self):
         """

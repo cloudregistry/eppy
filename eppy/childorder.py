@@ -1,5 +1,8 @@
 
 
+CMD_BASE = ('check', 'create', 'delete', 'info', 'login', 'logout', 'poll', 'renew', 'transfer', 'update',  # one of
+            'extension', 'clTRID')
+
 CMD_LOGIN = ('clID',
              'pw',
              'newPW',

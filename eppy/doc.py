@@ -1,5 +1,7 @@
 from eppy.xmldict import XmlDictObject, _BASE_NSMAP, dict2xml, ElementTree
 from . import childorder
+from .utils import gen_trid
+
 
 EPP_NSMAP = dict(_BASE_NSMAP)
 EPP_STD_OBJECTS_MAP = {
@@ -28,7 +30,7 @@ class EppDoc(XmlDictObject):
         if not nsmap:
             nsmap = EPP_NSMAP.copy()
         if not dct:
-            dct = dpath_make(self._path)
+            dct = self.cmddef()
         super(EppDoc, self).__init__(dct, nsmap=nsmap, extra_nsmap=extra_nsmap)
 
     def to_xml(self, force_prefix):
@@ -44,6 +46,26 @@ class EppDoc(XmlDictObject):
 
     def __str__(self):
         return unicode(self).encode('utf-8')
+
+    @classmethod
+    def cmddef(cls):
+        """
+        Create an `XmlDictObject` based on the `_path` defined, and goes through each super class to wire up
+        the _childorder
+        """
+        dct = dpath_make(cls._path)
+
+        # we need to search mro because if we just did `cls._childorder` it could come from any superclass,
+        # which may not correspond to the same level where `cls._path` is defined.
+        # Also, we want to be able to have each level define its own childorder.
+        for aclass in cls.__mro__[1:]:
+            if aclass == EppDoc:
+                # done searching
+                break
+
+            if '_childorder' in aclass.__dict__:
+                dpath_get(dct, aclass._path)['_order'] = aclass._childorder['__order']
+        return dct
 
     @classmethod
     def from_xml(cls, buf, default_prefix='epp', extra_nsmap=None):
@@ -62,6 +84,7 @@ class EppHello(EppDoc):
 
 class EppCommand(EppDoc):
     _path = ('epp', 'command')
+    _childorder = {'__order': childorder.CMD_BASE}
 
     def to_xml(self, force_prefix):
         if hasattr(self, 'namestore_product') and self.namestore_product:
@@ -73,6 +96,9 @@ class EppCommand(EppDoc):
     def add_command_extension(self, ext_dict):
         self['epp']['command'].setdefault('extension', {}).update(ext_dict)
 
+    def add_clTRID(self, clTRID=None):
+        self['epp']['command']['clTRID'] = clTRID or gen_trid()
+
 
 
 class EppLoginCommand(EppCommand):
@@ -80,7 +106,6 @@ class EppLoginCommand(EppCommand):
     _childorder = {'__order': childorder.CMD_LOGIN}
 
     def __init__(self, dct=None):
-        #print "comand init", dct
         if dct is None:
             dct = {
                     'epp': {
@@ -110,12 +135,13 @@ class EppCheckCommand(EppCommand):
     _path = ('epp', 'command', 'check')
 
 
-class EppCheckDomainCommand(EppCommand):
+class EppCheckDomainCommand(EppCheckCommand):
     _path = ('epp', 'command', 'check', 'domain:check')
 
 
 class EppCheckHostCommand(EppCommand):
     _path = ('epp', 'command', 'check', 'host:check')
+
     def __init__(self, dct=None, hosts=None):
         if dct is None:
             if hosts is None:
@@ -138,57 +164,16 @@ class EppCheckHostCommand(EppCommand):
 
 class EppInfoCommand(EppCommand):
     _path = ('epp', 'command', 'info')
-    def __init__(self, dct=None, extra_nsmap={}):
-        if dct is None:
-            dct = self.cmddef()
-        super(EppInfoCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
-
-    @classmethod
-    def cmddef(cls):
-        return {
-            'epp': {
-                'command': {
-                    'info': {},
-                },
-            },
-        }
 
 
 class EppInfoDomainCommand(EppInfoCommand):
     _path = EppInfoCommand._path + ('domain:info',)
     _childorder = {'__order': childorder.CMD_INFO_DOMAIN}
 
-    def __init__(self, dct=None, extra_nsmap={}):
-        if dct is None:
-            dct = self.cmddef()
-        super(EppInfoDomainCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
-
-    @classmethod
-    def cmddef(cls):
-        dct = EppInfoCommand.cmddef()
-        dpath = dpath_get(dct, EppInfoCommand._path)
-        dpath['domain:info'] = {}
-        dpath = dpath_get(dct, cls._path)
-        return dct
-
-
 
 class EppInfoContactCommand(EppInfoCommand):
     _path = EppInfoCommand._path + ('contact:info',)
     _childorder = {'__order': childorder.CMD_INFO_CONTACT}
-
-    def __init__(self, dct=None, extra_nsmap={}):
-        if dct is None:
-            dct = self.cmddef()
-        super(EppInfoContactCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
-
-    @classmethod
-    def cmddef(cls):
-        dct = EppInfoCommand.cmddef()
-        dpath = dpath_get(dct, EppInfoCommand._path)
-        dpath['contact:info'] = {}
-        dpath = dpath_get(dct, cls._path)
-        return dct
 
     def normalize_response(self, respdoc):
         """
@@ -212,23 +197,8 @@ class EppInfoContactCommand(EppInfoCommand):
                 respdoc.resData['contact:infData']['fax'] = {'_text': fax}
 
 
-
-
 class EppInfoHostCommand(EppInfoCommand):
     _path = EppInfoCommand._path + ('host:info',)
-
-    def __init__(self, dct=None, extra_nsmap={}):
-        if dct is None:
-            dct = self.cmddef()
-        super(EppInfoHostCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
-
-    @classmethod
-    def cmddef(cls):
-        dct = EppInfoCommand.cmddef()
-        dpath = dpath_get(dct, EppInfoCommand._path)
-        dpath['host:info'] = {}
-        dpath = dpath_get(dct, cls._path)
-        return dct
 
     def normalize_response(self, respdoc):
         """
@@ -247,30 +217,29 @@ class EppInfoHostCommand(EppInfoCommand):
                     addrs[i] = dict(_text=addr)
 
 
-class EppCreateDomainCommand(EppCommand):
-    _path = ('epp', 'command', 'create', 'domain:create')
+
+class EppCreateCommand(EppCommand):
+    _path = ('epp', 'command', 'create')
+
+    @classmethod
+    def cmddef(cls):
+        return {
+            'epp': {
+                'command': {
+                    '_order': ['create', 'extension', 'clTRID'],
+                    'create': {},
+                    },
+                },
+            }
+
+
+class EppCreateDomainCommand(EppCreateCommand):
+    _path = EppCreateCommand._path + ('domain:create',)
     _childorder = {'__order': childorder.CMD_CREATE_DOMAIN}
 
-    def __init__(self, dct=None, extra_nsmap={}):
-        #print "comand init", dct
-        if dct is None:
-            dct = {
-                    'epp': {
-                        'command': {
-                            '_order': ['create', 'extension'],
-                            'create': {
-                                "domain:create": {},
-                                },
-                            },
-                        },
-                    }
 
-        super(EppCreateDomainCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
-
-
-
-class EppCreateContactCommand(EppCommand):
-    _path = ['epp', 'command', 'create', 'contact:create']
+class EppCreateContactCommand(EppCreateCommand):
+    _path = EppCreateCommand._path + ('contact:create',)
     _childorder = {
         '__order': childorder.CMD_CREATE_CONTACT,
         'postalInfo': {
@@ -284,98 +253,30 @@ class EppCreateContactCommand(EppCommand):
         }
     }
 
-    def __init__(self, dct=None, extra_nsmap={}):
-        if dct is None:
-            dct = {
-                    'epp': {
-                        'command': {
-                            '_order': ['create', 'extension'],
-                            'create': {
-                                "contact:create": {},
-                                },
-                            },
-                        },
-                    }
 
-        super(EppCreateContactCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
-
-
-class EppCreateHostCommand(EppCommand):
-    _path = ('epp', 'command', 'create', 'host:create')
+class EppCreateHostCommand(EppCreateCommand):
+    _path = EppCreateCommand._path + ('host:create',)
     _childorder = {'__order': childorder.CMD_CREATE_HOST}
 
-    def __init__(self, dct=None, extra_nsmap={}):
-        if dct is None:
-            dct = {
-                    'epp': {
-                        'command': {
-                            '_order': ['create', 'extension'],
-                            'create': {
-                                "host:create": {},
-                                },
-                            },
-                        },
-                    }
-
-        super(EppCreateHostCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
 
 
-class EppRenewDomainCommand(EppCommand):
-    _path = ('epp', 'command', 'renew', 'domain:renew')
+class EppRenewCommand(EppCommand):
+    _path = ('epp', 'command', 'renew')
+
+
+class EppRenewDomainCommand(EppRenewCommand):
+    _path = EppRenewCommand._path + ('domain:renew',)
     _childorder = {'__order': childorder.CMD_RENEW_DOMAIN}
-
-    def __init__(self, dct=None, extra_nsmap={}):
-        if dct is None:
-            dct = {
-                    'epp': {
-                        'command': {
-                            '_order': ['renew', 'extension'],
-                            'renew': {
-                                "domain:renew": {},
-                                },
-                            },
-                        },
-                    }
-        super(EppRenewDomainCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
-
 
 
 
 class EppUpdateCommand(EppCommand):
     _path = ('epp', 'command', 'update')
 
-    def __init__(self, dct=None, extra_nsmap={}):
-        if dct is None:
-            dct = self.cmddef()
-        super(EppUpdateCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
-
-    @classmethod
-    def cmddef(cls):
-        return {
-            'epp': {
-                'command': {
-                    'update': {},
-                },
-            },
-        }
-
 
 class EppUpdateDomainCommand(EppUpdateCommand):
     _path = EppUpdateCommand._path + ('domain:update',)
     _childorder = {'__order': childorder.CMD_UPDATE_DOMAIN}
-
-    def __init__(self, dct=None, extra_nsmap={}):
-        if dct is None:
-            dct = {
-                    'epp': {
-                        'command': {
-                            'update': {
-                                "domain:update": {},
-                                },
-                            },
-                        },
-                    }
-        super(EppUpdateDomainCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
 
     def add_secdns_data(self, data):
         secdns_data = dict()
@@ -405,7 +306,6 @@ class EppUpdateDomainCommand(EppUpdateCommand):
             update_data = [{k: v[0] if len(v) == 1 else v} for k, v in tmp_dict.iteritems()]
             secdns_data[update_data_key] = update_data
         self['epp']['command'].setdefault('extension', {})['secDNS:update'] = secdns_data
-        print self['epp']['command']
 
 
 class EppUpdateContactCommand(EppUpdateCommand):
@@ -417,33 +317,16 @@ class EppUpdateContactCommand(EppUpdateCommand):
         },
     }
 
-    def __init__(self, dct=None, extra_nsmap={}):
-        if dct is None:
-            dct = dpath_make(self._path)
-
-        super(EppUpdateContactCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
 
 
 class EppUpdateHostCommand(EppUpdateCommand):
     _path = EppUpdateCommand._path + ('host:update',)
     _childorder = {'__order': childorder.CMD_UPDATE_DOMAIN}
 
-    def __init__(self, dct=None, extra_nsmap={}):
-        if dct is None:
-            dct = {
-                'epp': {
-                    'command': {
-                        'update': {
-                            "host:update": {},
-                        },
-                    },
-                },
-            }
-        super(EppUpdateHostCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
 
 
-class EppCheckContactCommand(EppCommand):
-    _path = ('epp', 'command', 'check', 'contact:check')
+class EppCheckContactCommand(EppCheckCommand):
+    _path = EppCheckCommand._path + ('contact:check',)
 
     def __init__(self, dct=None, contacts=None):
         if dct is None:
@@ -464,61 +347,32 @@ class EppCheckContactCommand(EppCommand):
         super(EppCheckContactCommand, self).__init__(dct)
 
 
-class EppDeleteContactCommand(EppCommand):
-    _path = ('epp', 'command', 'delete', 'contact:delete')
 
-    def __init__(self, dct=None, extra_nsmap={}):
-        if dct is None:
-            dct = {
-                'epp': {
-                    'command': {
-                        '_order': ['delete', 'extension'],
-                        'delete': {
-                            "contact:delete": {},
-                        },
+class EppDeleteCommand(EppCommand):
+    _path = ('epp', 'command', 'delete')
+
+    @classmethod
+    def cmddef(cls):
+        return {
+            'epp': {
+                'command': {
+                    '_order': ['delete', 'extension'],
+                    'delete': {},
                     },
                 },
             }
 
-        super(EppDeleteContactCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
+
+class EppDeleteContactCommand(EppDeleteCommand):
+    _path = EppDeleteCommand._path + ('contact:delete',)
 
 
-class EppDeleteDomainCommand(EppCommand):
-    _path = ('epp', 'command', 'delete', 'domain:delete')
-
-    def __init__(self, dct=None, extra_nsmap={}):
-        if dct is None:
-            dct = {
-                'epp': {
-                    'command': {
-                        '_order': ['delete', 'extension'],
-                        'delete': {
-                            "domain:delete": {},
-                        },
-                    },
-                },
-            }
-
-        super(EppDeleteDomainCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
+class EppDeleteDomainCommand(EppDeleteCommand):
+    _path = EppDeleteCommand._path + ('domain:delete',)
 
 
-class EppDeleteHostCommand(EppCommand):
-    _path = ('epp', 'command', 'delete', 'host:delete')
-
-    def __init__(self, dct=None, extra_nsmap={}):
-        if dct is None:
-            dct = {
-                    'epp': {
-                        'command': {
-                            '_order': ['delete', 'extension'],
-                            'delete': {
-                                "host:delete": {},
-                                },
-                            },
-                        },
-                    }
-
-        super(EppDeleteHostCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
+class EppDeleteHostCommand(EppDeleteCommand):
+    _path = EppDeleteCommand._path + ('host:delete',)
 
 
 
