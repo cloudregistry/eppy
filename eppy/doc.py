@@ -1,4 +1,5 @@
 from eppy.xmldict import XmlDictObject, _BASE_NSMAP, dict2xml, ElementTree
+import copy
 from . import childorder
 from .utils import gen_trid
 
@@ -103,28 +104,40 @@ class EppCommand(EppDoc):
 
 class EppLoginCommand(EppCommand):
     _path = ('epp', 'command', 'login')
-    _childorder = {'__order': childorder.CMD_LOGIN}
+    _childorder = {'__order': childorder.CMD_LOGIN,
+                   'svcs': {'__order': ['objURI', 'svcExtension']}}
 
-    def __init__(self, dct=None):
-        if dct is None:
-            dct = {
-                    'epp': {
-                        'command': {
-                            'login': {},
-                            },
-                        },
-                    }
+    def __init__(self, dct=None, nsmap=None, extra_nsmap=None, obj_uris=None, extra_obj_uris=None, extra_ext_uris=None, **kwargs):
+        super(EppLoginCommand, self).__init__(dct=None, nsmap=nsmap, extra_nsmap=extra_nsmap)
+        login = dpath_get(self, self._path)
+        if not hasattr(self, 'options'):
+            self.options = {'version': '1.0', 'lang': 'en'}
+        self.options._order = ['version', 'lang']
 
-        login = dpath_get(dct, self._path)
-        login.setdefault('_order', childorder.CMD_LOGIN)
-        login.setdefault('options', {'version': '1.0', 'lang': 'en'})
-        login['options']['_order'] = ['version', 'lang']
-        super(EppLoginCommand, self).__init__(dct)
-
-    def to_xml(self, force_prefix):
         if not hasattr(self, 'svcs'):
-            self.svcs = dict(objURI=EPP_STD_OBJECTS_MAP.values())
-        return super(EppLoginCommand, self).to_xml(force_prefix=force_prefix)
+            extra_obj_uris = extra_obj_uris or []
+            obj_uris = obj_uris or copy.copy(EPP_STD_OBJECTS_MAP.values())
+            for uri in extra_obj_uris:
+                if ':' not in uri:
+                    # if no colon, treat it as a well-known namespace prefix
+                    uri = EPP_NSMAP[uri]
+                if uri not in obj_uris:
+                    obj_uris.append(uri)
+
+            self.svcs = dict(objURI=obj_uris)
+
+            ext_uris = []
+            for uri in extra_ext_uris:
+                if ':' not in uri:
+                    # if no colon, treat it as a well-known namespace prefix
+                    uri = EPP_NSMAP[uri]
+                if uri not in obj_uris:
+                    ext_uris.append(uri)
+            if ext_uris:
+                self.svcs.svcExtension = dict(extURI=ext_uris)
+
+        #self.svcs._order = ['objURI', 'svcExtension']
+
 
 
 class EppLogoutCommand(EppCommand):
