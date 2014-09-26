@@ -160,24 +160,10 @@ class EppCheckDomainCommand(EppCheckCommand):
 class EppCheckHostCommand(EppCommand):
     _path = ('epp', 'command', 'check', 'host:check')
 
-    def __init__(self, dct=None, hosts=None):
-        if dct is None:
-            if hosts is None:
-                hosts = []
-            elif not isinstance(hosts, (list, tuple)):
-                hosts = [hosts]
 
-            dct = {
-                    'epp': {
-                        'command': {
-                            'check': {
-                                'host:check': {'name': list(hosts)}
-                                },
-                            },
-                        },
-                    }
+class EppCheckContactCommand(EppCheckCommand):
+    _path = EppCheckCommand._path + ('contact:check',)
 
-        super(EppCheckHostCommand, self).__init__(dct)
 
 
 class EppInfoCommand(EppCommand):
@@ -238,17 +224,6 @@ class EppInfoHostCommand(EppInfoCommand):
 
 class EppCreateCommand(EppCommand):
     _path = ('epp', 'command', 'create')
-
-    @classmethod
-    def cmddef(cls):
-        return {
-            'epp': {
-                'command': {
-                    '_order': ['create', 'extension', 'clTRID'],
-                    'create': {},
-                    },
-                },
-            }
 
 
 class EppCreateDomainCommand(EppCreateCommand):
@@ -343,42 +318,10 @@ class EppUpdateHostCommand(EppUpdateCommand):
 
 
 
-class EppCheckContactCommand(EppCheckCommand):
-    _path = EppCheckCommand._path + ('contact:check',)
-
-    def __init__(self, dct=None, contacts=None):
-        if dct is None:
-            if contacts is None:
-                contacts = []
-            elif isinstance(contacts, basestring):
-                contacts = [contacts]
-            dct = {
-                'epp': {
-                    'command': {
-                        'check': {
-                            'contact:check': {'id': list(contacts)}
-                        },
-                    },
-                },
-            }
-
-        super(EppCheckContactCommand, self).__init__(dct)
-
 
 
 class EppDeleteCommand(EppCommand):
     _path = ('epp', 'command', 'delete')
-
-    @classmethod
-    def cmddef(cls):
-        return {
-            'epp': {
-                'command': {
-                    '_order': ['delete', 'extension'],
-                    'delete': {},
-                    },
-                },
-            }
 
 
 class EppDeleteContactCommand(EppDeleteCommand):
@@ -422,26 +365,11 @@ class EppTransferCommand(EppCommand):
         dct['epp']['command']['transfer']['@op'] = op
         super(EppTransferCommand, self).__init__(dct)
 
-    @classmethod
-    def cmddef(cls):
-        return {
-            'epp': {
-                'command': {
-                    'transfer': {},
-                },
-            },
-        }
-
 
 
 class EppTransferDomainCommand(EppTransferCommand):
     _path = EppTransferCommand._path + ('domain:transfer',)
     _childorder = {'__order': childorder.CMD_TRANSFER_DOMAON}
-
-    def __init__(self, dct=None):
-        if dct is None:
-            dct = self.cmddef()
-        super(EppTransferDomainCommand, self).__init__(dct)
 
     @classmethod
     def cmddef(cls):
