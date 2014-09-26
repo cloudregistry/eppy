@@ -116,7 +116,7 @@ class EppLoginCommand(EppCommand):
 
         if not hasattr(self, 'svcs'):
             extra_obj_uris = extra_obj_uris or []
-            obj_uris = obj_uris or copy.copy(EPP_STD_OBJECTS_MAP.values())
+            obj_uris = copy.copy(obj_uris or EPP_STD_OBJECTS_MAP.values())
             for uri in extra_obj_uris:
                 if ':' not in uri:
                     # if no colon, treat it as a well-known namespace prefix

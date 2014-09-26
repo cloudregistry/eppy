@@ -64,12 +64,12 @@ class EppClient():
     def hello(self):
         return self.send(EppHello())
 
-    def login(self, clID, pw, raise_on_fail=True, extra_obj_uris=None, extra_ext_uris=None):
+    def login(self, clID, pw, raise_on_fail=True, obj_uris=None, extra_obj_uris=None, extra_ext_uris=None):
         if not self.sock:
             self.connect(self.host, self.port)
             self.greeting = EppResponse.from_xml(self.read())
 
-        cmd = EppLoginCommand(extra_obj_uris=extra_obj_uris, extra_ext_uris=extra_ext_uris)
+        cmd = EppLoginCommand(obj_uris=obj_uris, extra_obj_uris=extra_obj_uris, extra_ext_uris=extra_ext_uris)
         cmd.clID = clID
         cmd.pw = pw
         r = self.send(cmd)
