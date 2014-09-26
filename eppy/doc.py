@@ -22,6 +22,8 @@ EPP_NSMAP.update({
     'secDNS': 'urn:ietf:params:xml:ns:secDNS-1.1',
     'namestoreExt': 'http://www.verisign-grs.com/epp/namestoreExt-1.1',
     'launch': 'urn:ietf:params:xml:ns:launch-1.0',
+    'smd': 'urn:ietf:params:xml:ns:signedMark-1.0',
+    'mark': 'urn:ietf:params:xml:ns:mark-1.0',
 })
 
 
@@ -92,6 +94,9 @@ class EppCommand(EppDoc):
             self['epp']['command'].setdefault(
                 'extension', {})['namestoreExt:namestoreExt'] = {'namestoreExt:subProduct': self.namestore_product}
             del self.namestore_product
+        if hasattr(self, 'phases') and self.phases:
+            self.add_command_extension(self.phases)
+            del self.phases
         return super(EppCommand, self).to_xml(force_prefix)
 
     def add_command_extension(self, ext_dict):
