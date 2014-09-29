@@ -132,6 +132,7 @@ class EppLoginCommand(EppCommand):
             self.svcs = dict(objURI=obj_uris)
 
             ext_uris = []
+            extra_ext_uris = extra_ext_uris or []
             for uri in extra_ext_uris:
                 if ':' not in uri:
                     # if no colon, treat it as a well-known namespace prefix
@@ -431,7 +432,7 @@ class EppResponse(EppDoc):
 
     @property
     def first_result(self):
-        return self.result[0].msg
+        return self.result[0]
 
     @property
     def response_extension(self):

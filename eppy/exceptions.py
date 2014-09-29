@@ -4,7 +4,7 @@ from .doc import EppResponse
 class EppException(Exception):
     def __init__(self, resp):
         if isinstance(resp, EppResponse):
-            msg = "{%s} %s" % (resp.code, resp.message)
+            msg = "{%s} %s" % (resp.code, resp.msg)
         else:
             msg = resp
         self.resp = resp
