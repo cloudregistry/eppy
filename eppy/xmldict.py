@@ -171,11 +171,12 @@ def _dict2xml_recurse(parent, dictitem, nsmap, current_prefixes, childorder, for
     else:
         items = dictitem.iteritems()
 
+    parent_prefix = parent.tag.partition(':')[0] if ':' in parent.tag else ''
     for (tag, child) in items:
         if tag in ('_order', '_nsmap'):
             continue
         if tag == '_text':
-            parent.text = str(child)
+            parent.text = unicode(child)
         elif tag.startswith("@"):
             attrname = tag[1:]
             _do_xmlns(parent, attrname, current_prefixes, nsmap, set_default_ns=False)
@@ -193,22 +194,23 @@ def _dict2xml_recurse(parent, dictitem, nsmap, current_prefixes, childorder, for
                         if not force_prefix:
                             nsmap_recurs[''] = uri
                         prefixes_recurs = current_prefixes.union([prefix])
-                elif force_prefix:
-                    # tag has no prefix, take parent's
-                    parent_prefix = parent.tag.split(':')[0] if ':' in parent.tag else ''
-                    if parent_prefix:
-                        tag = '%s:%s' % (parent_prefix, tag)
-                    elem = ElementTree.Element(tag)
                 else:
+                    # tag has no prefix
+                    if force_prefix:
+                        # take parent's prefix
+                        if parent_prefix:
+                            tag = '%s:%s' % (parent_prefix, tag)
                     elem = ElementTree.Element(tag)
 
                 parent.append(elem)
                 if isinstance(listchild, dict):
+                    tag_prefix = tag.partition(':')[0] if ':' in tag else ''
+                    reltag = tag.rpartition(':')[2] if not tag_prefix or tag_prefix == parent_prefix else tag
                     _dict2xml_recurse(elem,
                                       listchild,
                                       nsmap=nsmap_recurs,
                                       current_prefixes=prefixes_recurs,
-                                      childorder=childorder.get(tag, {}),
+                                      childorder=childorder.get(reltag, {}),
                                       force_prefix=force_prefix)
                 else:
                     elem.text = unicode(listchild)
@@ -223,22 +225,23 @@ def _dict2xml_recurse(parent, dictitem, nsmap, current_prefixes, childorder, for
                     if not force_prefix:
                         nsmap_recurs[''] = uri
                     prefixes_recurs = current_prefixes.union([prefix])
-            elif force_prefix:
-                # tag has no prefix, take parent's
-                parent_prefix = parent.tag.split(':')[0] if ':' in parent.tag else ''
-                if parent_prefix:
-                    tag = '%s:%s' % (parent_prefix, tag)
-                elem = ElementTree.Element(tag)
             else:
+                # tag has no prefix
+                if force_prefix:
+                    # take parent's prefix
+                    if parent_prefix:
+                        tag = '%s:%s' % (parent_prefix, tag)
                 elem = ElementTree.Element(tag)
 
             parent.append(elem)
             if isinstance(child, dict):
+                tag_prefix = tag.partition(':')[0] if ':' in tag else ''
+                reltag = tag.rpartition(':')[2] if not tag_prefix or tag_prefix == parent_prefix else tag
                 _dict2xml_recurse(elem,
                                   child,
                                   nsmap=nsmap_recurs,
                                   current_prefixes=prefixes_recurs,
-                                  childorder=childorder.get(tag, {}),
+                                  childorder=childorder.get(reltag, {}),
                                   force_prefix=force_prefix)
             else:
                 elem.text = unicode(child)
