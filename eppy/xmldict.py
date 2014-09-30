@@ -79,10 +79,12 @@ class XmlDictObject(dict):
         if item in it:
             return it[item]
         else:
+            # we are calling the `dict` version of __str__ in case the regular __str__ implementation got overridden
+            # by a subclass that somehow calls this method again causing an unterminated recursion
             raise AttributeError("no such node (%s/%s) in: %r (self=%s)" % ('/'.join(self._path),
                                                                             item,
                                                                             it,
-                                                                            super(XmlDictObject, self).__str__()))
+                                                                            dict.__str__(self)))
 
 
     def __setattr__(self, item, value):
