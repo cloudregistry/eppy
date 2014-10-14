@@ -61,8 +61,8 @@ class EppClient():
         return '{}:{}'.format(*self.sock.getpeername())
 
 
-    def hello(self):
-        return self.send(EppHello())
+    def hello(self, log_send_recv=False):
+        return self.send(EppHello(), log_send_recv=log_send_recv)
 
     def login(self, clID, pw, raise_on_fail=True, obj_uris=None, extra_obj_uris=None, extra_ext_uris=None):
         if not self.sock:
@@ -120,13 +120,15 @@ class EppClient():
         writemeth(''.join(buf))
 
 
-    def send(self, doc):
+    def send(self, doc, log_send_recv=True):
         self._gen_cltrid(doc)
         buf = doc.to_xml(force_prefix=True).encode('utf-8')
-        self.log.debug("SEND %s: %s", self.remote_info(), buf)
+        if log_send_recv:
+            self.log.debug("SEND %s: %s", self.remote_info(), buf)
         self.write(buf)
         r = self.read()
-        self.log.debug("RECV %s: %s", self.remote_info(), r)
+        if log_send_recv:
+            self.log.debug("RECV %s: %s", self.remote_info(), r)
         resp = EppResponse.from_xml(r)
         doc.normalize_response(resp)
         return resp
