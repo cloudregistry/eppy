@@ -308,6 +308,12 @@ class EppUpdateContactCommand(EppUpdateCommand):
         '__order': childorder.CMD_UPDATE_CONTACT,
         'chg': {
             '__order': childorder.CMD_UPDATE_CONTACT_CHG,
+            'postalInfo': {
+                '__order': childorder.POSTAL_INFO,
+                'addr': {
+                   '__order': childorder.ADDR
+                },
+            },
         },
     }
 
