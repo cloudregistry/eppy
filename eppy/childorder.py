@@ -25,6 +25,7 @@ CMD_UPDATE_CONTACT = ('id', 'add', 'rem', 'chg')
 CMD_UPDATE_CONTACT_CHG = ('postalInfo', 'voice', 'fax', 'email', 'authInfo', 'disclose')
 
 CMD_TRANSFER_DOMAON = ('name', 'period', 'authInfo')
+CMD_TRANSFER_CONTACT = ('id', 'period', 'authInfo')
 
 POSTAL_INFO = (
     'name',

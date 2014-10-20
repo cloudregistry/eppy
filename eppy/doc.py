@@ -388,6 +388,20 @@ class EppTransferDomainCommand(EppTransferCommand):
         return dct
 
 
+class EppTransferContactCommand(EppTransferCommand):
+    _path = EppTransferCommand._path + ('contact:transfer',)
+    _childorder = {'__order': childorder.CMD_TRANSFER_CONTACT}
+
+    @classmethod
+    def cmddef(cls):
+        dct = EppTransferCommand.cmddef()
+        dpath = dpath_get(dct, EppTransferCommand._path)
+        dpath['contact:transfer'] = {}
+        dpath = dpath_get(dct, cls._path)
+        dpath['_order'] = ['id', 'period', 'authInfo']
+        return dct
+
+
 class EppResponse(EppDoc):
     _path = ('epp', 'response')
     _childorder = {'__order': ('result', 'msgQ', 'resData', 'extension', 'trID')}
