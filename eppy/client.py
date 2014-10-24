@@ -19,7 +19,7 @@ class EppClient():
     def __init__(self, host=None, port=700,
                  ssl_enable=True, ssl_keyfile=None, ssl_certfile=None, ssl_cacerts=None,
                  ssl_version=ssl.PROTOCOL_SSLv23,
-                 ssl_validate_hostname=True, socket_timeout=60):
+                 ssl_validate_hostname=True, socket_timeout=60, socket_connect_timeout=15):
         self.host = host
         self.port = port
         self.ssl_enable = ssl_enable
@@ -30,7 +30,7 @@ class EppClient():
         self.certfile = ssl_certfile
         self.cacerts = ssl_cacerts
         self.socket_timeout = socket_timeout
-        self.socket_connect_timeout = socket_timeout
+        self.socket_connect_timeout = socket_connect_timeout
         self.validate_hostname = ssl_validate_hostname
         self.log = logging.getLogger(__name__)
         self.sock = None
