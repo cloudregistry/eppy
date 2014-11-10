@@ -146,7 +146,7 @@ class EppCommand(EppDoc):
         return super(EppCommand, self).to_xml(force_prefix)
 
     def add_command_extension(self, ext_dict):
-        self['epp']['command'].setdefault('extension', {}).update(ext_dict.freeze())
+        self['epp']['command'].setdefault('extension', {}).update(ext_dict.freeze() if isinstance(ext_dict, EppDoc) else ext_dict)
 
     def add_clTRID(self, clTRID=None):
         self['epp']['command']['clTRID'] = clTRID or gen_trid()
