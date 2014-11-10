@@ -76,6 +76,47 @@ class EppDoc(XmlDictObject):
         return dct
 
     @classmethod
+    def annotate(cls, dct=None):
+        """
+        annotate the given `dct` (or create an empty one) by wiring up the _childorder and _nsmap fields
+        """
+        dct = dct or dpath_make(cls._path)
+
+        # we need to search mro because if we just did `cls._childorder` it could come from any superclass,
+        # which may not correspond to the same level where `cls._path` is defined.
+        # Also, we want to be able to have each level define its own childorder.
+        for aclass in cls.__mro__:
+            if aclass == EppDoc:
+                # done searching
+                break
+
+            if '_childorder' in aclass.__dict__:
+                # recursively annotate the dict items
+                cls._annotate_order_recurse(dpath_get(dct, aclass._path), aclass._childorder)
+                # dpath_get(dct, aclass._path)['_order'] = aclass._childorder['__order']
+
+            if '_nsmap' in aclass.__dict__:
+                dpath_get(dct, aclass._path)['_nsmap'] = aclass._nsmap
+        return dct
+
+    def freeze(self):
+        return self.__class__.annotate(self)
+
+    @classmethod
+    def _annotate_order_recurse(cls, dct, childorder):
+        if childorder.get('__order'):
+            dct['_order'] = childorder['__order']
+        for k in (k for k in childorder.keys() if k != '__order'):
+            child = dct.get(k)
+            if isinstance(child, dict):
+                cls._annotate_order_recurse(child, childorder[k])
+            if isinstance(child, (list, tuple)):
+                # if there are multiple elements, we need to put the `_order` key in each element
+                for c in child:
+                    if isinstance(c, dict):
+                        cls._annotate_order_recurse(c, childorder[k])
+
+    @classmethod
     def from_xml(cls, buf, default_prefix='epp', extra_nsmap=None):
         return super(EppDoc, cls).from_xml(buf, default_prefix=default_prefix, extra_nsmap=extra_nsmap)
 
@@ -105,7 +146,7 @@ class EppCommand(EppDoc):
         return super(EppCommand, self).to_xml(force_prefix)
 
     def add_command_extension(self, ext_dict):
-        self['epp']['command'].setdefault('extension', {}).update(ext_dict)
+        self['epp']['command'].setdefault('extension', {}).update(ext_dict.freeze())
 
     def add_clTRID(self, clTRID=None):
         self['epp']['command']['clTRID'] = clTRID or gen_trid()
