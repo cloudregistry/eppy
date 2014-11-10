@@ -71,6 +71,8 @@ class EppDoc(XmlDictObject):
 
             if '_childorder' in aclass.__dict__:
                 dpath_get(dct, aclass._path)['_order'] = aclass._childorder['__order']
+            if '_nsmap' in aclass.__dict__:
+                dpath_get(dct, aclass._path)['_nsmap'] = aclass._nsmap
         return dct
 
     @classmethod

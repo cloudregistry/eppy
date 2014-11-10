@@ -217,13 +217,14 @@ def _dict2xml_recurse(parent, dictitem, nsmap, current_prefixes, childorder, for
                 else:
                     elem.text = unicode(listchild)
         else:
-            nsmap_recurs = nsmap
+            nsmap_recurs = nsmap.copy()
             prefixes_recurs = current_prefixes.copy()
             if ":" in tag:
                 elem = ElementTree.Element(tag)
-                prefix, uri = _do_xmlns(elem, tag, current_prefixes, nsmap, set_default_ns=not force_prefix)
+                if isinstance(child, dict) and '_nsmap' in child:
+                    nsmap_recurs.update(child['_nsmap'])
+                prefix, uri = _do_xmlns(elem, tag, current_prefixes, nsmap_recurs, set_default_ns=not force_prefix)
                 if uri: # we will change the default namespace for children with no prefix
-                    nsmap_recurs = nsmap.copy()
                     if not force_prefix:
                         nsmap_recurs[''] = uri
                     prefixes_recurs = current_prefixes.union([prefix])
