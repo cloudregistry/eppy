@@ -41,7 +41,10 @@ class EppDoc(XmlDictObject):
         # NOTE: this does not contain the root element
         # ``self._childorder`` is defined relative to self._path, so we do some tree grafting here
         qualified_childorder = dpath_make(self._path[1:])
-        dpath_get(qualified_childorder, self._path[1:-1])[self._path[-1]] = self._childorder
+        if self._path[1:]:
+            dpath_get(qualified_childorder, self._path[1:-1])[self._path[-1]] = self._childorder
+        else:
+            qualified_childorder = self._childorder
         return super(EppDoc, self).to_xml(qualified_childorder, force_prefix=force_prefix)
 
     def __unicode__(self):
@@ -61,7 +64,7 @@ class EppDoc(XmlDictObject):
         # we need to search mro because if we just did `cls._childorder` it could come from any superclass,
         # which may not correspond to the same level where `cls._path` is defined.
         # Also, we want to be able to have each level define its own childorder.
-        for aclass in cls.__mro__[1:]:
+        for aclass in cls.__mro__:
             if aclass == EppDoc:
                 # done searching
                 break
