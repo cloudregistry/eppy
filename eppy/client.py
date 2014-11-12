@@ -61,10 +61,15 @@ class EppClient():
         return '{}:{}'.format(*self.sock.getpeername())
 
 
-    def hello(self, log_send_recv=False):
-        return self.send(EppHello(), log_send_recv=log_send_recv)
+    def hello(self, log_send_recv=False, clTRID=None):
+        cmd = EppHello()
+        if clTRID:
+            cmd['epp']['command'] = {}
+            cmd['epp']['command']['clTRID'] = clTRID
+        return self.send(cmd, log_send_recv=log_send_recv)
 
-    def login(self, clID, pw, newPW=None, raise_on_fail=True, obj_uris=None, extra_obj_uris=None, extra_ext_uris=None):
+    def login(self, clID, pw, newPW=None, raise_on_fail=True, obj_uris=None, extra_obj_uris=None, extra_ext_uris=None,
+              clTRID=None):
         if not self.sock:
             self.connect(self.host, self.port)
             self.greeting = EppResponse.from_xml(self.read())
@@ -72,6 +77,8 @@ class EppClient():
         cmd = EppLoginCommand(obj_uris=obj_uris, extra_obj_uris=extra_obj_uris, extra_ext_uris=extra_ext_uris)
         cmd.clID = clID
         cmd.pw = pw
+        if clTRID:
+            cmd['epp']['command']['clTRID'] = clTRID
         if newPW:
             cmd.newPW = newPW
         r = self.send(cmd)
@@ -79,8 +86,10 @@ class EppClient():
             raise EppLoginError(r)
         return r
 
-    def logout(self):
+    def logout(self, clTRID=None):
         cmd = EppLogoutCommand()
+        if clTRID:
+            cmd['epp']['command']['clTRID'] = clTRID
         return self.send(cmd)
 
 
