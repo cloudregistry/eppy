@@ -61,12 +61,8 @@ class EppClient():
         return '{}:{}'.format(*self.sock.getpeername())
 
 
-    def hello(self, log_send_recv=False, clTRID=None):
-        cmd = EppHello()
-        if clTRID:
-            cmd['epp']['command'] = {}
-            cmd['epp']['command']['clTRID'] = clTRID
-        return self.send(cmd, log_send_recv=log_send_recv)
+    def hello(self, log_send_recv=False):
+        return self.send(EppHello(), log_send_recv=log_send_recv)
 
     def login(self, clID, pw, newPW=None, raise_on_fail=True, obj_uris=None, extra_obj_uris=None, extra_ext_uris=None,
               clTRID=None):
