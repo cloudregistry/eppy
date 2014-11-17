@@ -478,7 +478,11 @@ class EppResponse(EppDoc):
 
     @property
     def code(self):
-        return self.result[0]['@code']
+        res = self.first_result
+        if res:
+            return res['@code']
+        else:
+            return '0000'
 
     @property
     def ok(self):
@@ -494,11 +498,22 @@ class EppResponse(EppDoc):
 
     @property
     def msg(self):
-        return self.result[0].msg
+        res = self.first_result
+        if res:
+            msg = res['msg']
+            if isinstance(msg, dict):
+                return msg.get('_text', '')
+            else:
+                return msg
+        else:
+            return ''
 
     @property
     def first_result(self):
-        return self.result[0]
+        if hasattr(self, 'result') and len(self.result):
+            return self.result[0]
+        else:
+            return None
 
     @property
     def response_extension(self):
