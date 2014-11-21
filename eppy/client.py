@@ -129,7 +129,7 @@ class EppClient():
         writemeth(''.join(buf))
 
 
-    def send(self, doc, log_send_recv=True):
+    def send(self, doc, log_send_recv=True, extra_nsmap=None):
         self._gen_cltrid(doc)
         buf = doc.to_xml(force_prefix=True).encode('utf-8')
         if log_send_recv:
@@ -138,7 +138,7 @@ class EppClient():
         r = self.read()
         if log_send_recv:
             self.log.debug("RECV %s: %s", self.remote_info(), r)
-        resp = EppResponse.from_xml(r)
+        resp = EppResponse.from_xml(r, extra_nsmap=extra_nsmap)
         doc.normalize_response(resp)
         return resp
 
