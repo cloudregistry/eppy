@@ -42,7 +42,6 @@ class EppClient():
         self.sock.settimeout(self.socket_connect_timeout)  # connect timeout
         self.sock.connect((host, port or self.port))
         self.sock.settimeout(self.socket_timeout)  # regular timeout
-        self._sock = self.sock
         if self.ssl_enable:
             self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile,
                                         ssl_version=self.ssl_version,
@@ -224,7 +223,8 @@ class EppClient():
         writemeth(data[4:])
 
     def close(self):
-        self._sock.close()
+        self.sock.close()
+        self.sock = None
 
     def _gen_cltrid(self, doc):
         if isinstance(doc, (EppLoginCommand, EppCreateCommand, EppUpdateCommand, EppDeleteCommand, EppTransferCommand, EppRenewCommand)):
