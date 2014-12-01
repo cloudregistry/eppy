@@ -469,6 +469,7 @@ class EppResponse(EppDoc):
         ('epp', 'response', 'resData', 'contact:infData', 'postalInfo', 'addr', 'street'),
         ('epp', 'response', 'resData', 'contact:chkData', 'cd'),
         ('epp', 'response', 'extension', 'launch:chkData', 'cd'),
+        ('epp', 'response', 'extension', 'rgp:infData', 'rgpStatus'),
     ])
 
     def __init__(self, dct=None, extra_nsmap=None):
