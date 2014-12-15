@@ -31,7 +31,7 @@ class EppDoc(XmlDictObject):
     def __init__(self, dct=None, nsmap=None, extra_nsmap=None):
         # NOTE: setting attributes in __init__ will require special handling, see XmlDictObject
         if not nsmap:
-            nsmap = getattr(self, '_nsmap', EPP_NSMAP).copy()
+            nsmap = getattr(self.__class__, '_nsmap', EPP_NSMAP).copy()
         if not dct:
             dct = self.cmddef()
         super(EppDoc, self).__init__(dct, nsmap=nsmap, extra_nsmap=extra_nsmap)
