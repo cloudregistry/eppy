@@ -31,7 +31,7 @@ class EppDoc(XmlDictObject):
     def __init__(self, dct=None, nsmap=None, extra_nsmap=None):
         # NOTE: setting attributes in __init__ will require special handling, see XmlDictObject
         if not nsmap:
-            nsmap = EPP_NSMAP.copy()
+            nsmap = getattr(self, '_nsmap', EPP_NSMAP).copy()
         if not dct:
             dct = self.cmddef()
         super(EppDoc, self).__init__(dct, nsmap=nsmap, extra_nsmap=extra_nsmap)
@@ -70,7 +70,7 @@ class EppDoc(XmlDictObject):
                 break
 
             if '_childorder' in aclass.__dict__:
-                dpath_get(dct, aclass._path)['_order'] = aclass._childorder['__order']
+                dpath_get(dct, aclass._path)['_order'] = aclass._childorder.get('__order', tuple())
             if '_nsmap' in aclass.__dict__:
                 dpath_get(dct, aclass._path)['_nsmap'] = aclass._nsmap
         return dct

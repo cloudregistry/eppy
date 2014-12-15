@@ -167,7 +167,7 @@ def _dict2xml_recurse(parent, dictitem, nsmap, current_prefixes, childorder, for
     :param childorder: is a dict, can be `{}`
     """
     if '_order' in dictitem or '__order' in childorder:
-        ordr = dictitem.get('_order') or childorder['__order']
+        ordr = dictitem.get('_order') or childorder.get('__order', [])
         nodeorder = dict((name, i) for i,name in enumerate(ordr))
         items = sorted(dictitem.iteritems(), key=lambda x: nodeorder.get(x[0].split(":")[-1], 0))
     else:
