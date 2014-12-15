@@ -7,6 +7,7 @@ except ImportError:
     import ssl
 
 import struct
+from collections import deque
 import logging
 from .exceptions import EppLoginError, EppConnectionError
 from .doc import (EppResponse, EppHello, EppLoginCommand, EppLogoutCommand,
@@ -15,7 +16,7 @@ from .utils import gen_trid
 from backports.ssl_match_hostname import match_hostname, CertificateError
 
 
-class EppClient():
+class EppClient(object):
     def __init__(self, host=None, port=700,
                  ssl_enable=True, ssl_keyfile=None, ssl_certfile=None, ssl_cacerts=None,
                  ssl_version=ssl.PROTOCOL_SSLv23,
@@ -138,9 +139,26 @@ class EppClient():
         if log_send_recv:
             self.log.debug("RECV %s: %s", self.remote_info(), r)
         resp = EppResponse.from_xml(r, extra_nsmap=extra_nsmap)
+        self.strip_hints(resp)
         doc.normalize_response(resp)
         return resp
 
+    def strip_hints(self, data):
+        """
+        Remove various cruft from the given EppDoc (useful for responses where we don't care about _order etc.
+        """
+        stack = deque([data])
+        while len(stack):
+            current = stack.pop()
+            for k in list(current.keys()):
+                if k in ('@xsi:schemaLocation', '_order'):
+                    del current[k]
+                else:
+                    v = current[k]
+                    if isinstance(v, dict):
+                        # add to the list to visit
+                        stack.append(v)
+        return data
 
     def batchsend(self, docs, readresponse=True, failfast=True, pipeline=False):
         """ Send multiple documents. If ``pipeline`` is True, it will
