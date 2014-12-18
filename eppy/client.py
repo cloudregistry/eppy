@@ -129,7 +129,7 @@ class EppClient(object):
         writemeth(''.join(buf))
 
 
-    def send(self, doc, log_send_recv=True, extra_nsmap=None):
+    def send(self, doc, log_send_recv=True, extra_nsmap=None, strip_hints=True):
         self._gen_cltrid(doc)
         buf = doc.to_xml(force_prefix=True).encode('utf-8')
         if log_send_recv:
@@ -139,7 +139,8 @@ class EppClient(object):
         if log_send_recv:
             self.log.debug("RECV %s: %s", self.remote_info(), r)
         resp = EppResponse.from_xml(r, extra_nsmap=extra_nsmap)
-        self.strip_hints(resp)
+        if strip_hints:
+            self.strip_hints(resp)
         doc.normalize_response(resp)
         return resp
 
@@ -156,8 +157,13 @@ class EppClient(object):
                 else:
                     v = current[k]
                     if isinstance(v, dict):
-                        # add to the list to visit
+                        # visit later
                         stack.append(v)
+                    elif isinstance(v, list):
+                        # visit each dict in the list
+                        for elem in v:
+                            if isinstance(elem, dict):
+                                stack.append(elem)
         return data
 
     def batchsend(self, docs, readresponse=True, failfast=True, pipeline=False):
