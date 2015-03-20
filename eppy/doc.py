@@ -503,9 +503,16 @@ class EppResponse(EppDoc):
         if res:
             msg = res['msg']
             if isinstance(msg, dict):
-                return msg.get('_text', '')
-            else:
-                return msg
+                m = msg.get('_text', u'')
+
+            value = res.get('value', [{}])
+            if isinstance(value, dict):
+                value = [value]
+            # take the first
+            valuemsg = u', '.join(value[0].values())
+            if valuemsg:
+                m = u'{}; {}'.format(m, valuemsg)
+            return m
         else:
             return ''
 
