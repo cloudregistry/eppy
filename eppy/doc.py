@@ -501,9 +501,9 @@ class EppResponse(EppDoc):
     def msg(self):
         res = self.first_result
         if res:
-            msg = res['msg']
-            if isinstance(msg, dict):
-                m = msg.get('_text', u'')
+            m = res['msg']
+            if isinstance(m, dict):
+                m = m.get('_text', u'')
 
             value = res.get('value', [{}])
             if isinstance(value, dict):
