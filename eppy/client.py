@@ -19,14 +19,15 @@ from backports.ssl_match_hostname import match_hostname, CertificateError
 class EppClient(object):
     def __init__(self, host=None, port=700,
                  ssl_enable=True, ssl_keyfile=None, ssl_certfile=None, ssl_cacerts=None,
-                 ssl_version=ssl.PROTOCOL_SSLv23,
+                 ssl_version=None, ssl_ciphers=None,
                  ssl_validate_hostname=True, socket_timeout=60, socket_connect_timeout=15):
         self.host = host
         self.port = port
         self.ssl_enable = ssl_enable
         # PROTOCOL_SSLv23 gives the best proto version available (including TLSv1 and above)
         # SSLv2 should be disabled by most OpenSSL build
-        self.ssl_version = ssl_version
+        self.ssl_version = ssl_version or ssl.PROTOCOL_SSLv23
+        self.ssl_ciphers = ssl_ciphers  # if not given, use the default in Python version (`ssl._DEFAULT_CIPHERS`)
         self.keyfile = ssl_keyfile
         self.certfile = ssl_certfile
         self.cacerts = ssl_cacerts
@@ -46,6 +47,7 @@ class EppClient(object):
         if self.ssl_enable:
             self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile,
                                         ssl_version=self.ssl_version,
+                                        ciphers=self.ssl_ciphers,
                                         server_side=False,
                                         cert_reqs=ssl.CERT_REQUIRED,
                                         ca_certs=self.cacerts)
