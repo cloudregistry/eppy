@@ -27,6 +27,7 @@ class EppClient(object):
         # PROTOCOL_SSLv23 gives the best proto version available (including TLSv1 and above)
         # SSLv2 should be disabled by most OpenSSL build
         self.ssl_version = ssl_version or ssl.PROTOCOL_SSLv23
+        # `ssl_ciphers`, if given, should be a string (https://www.openssl.org/docs/apps/ciphers.html)
         self.ssl_ciphers = ssl_ciphers  # if not given, use the default in Python version (`ssl._DEFAULT_CIPHERS`)
         self.keyfile = ssl_keyfile
         self.certfile = ssl_certfile
