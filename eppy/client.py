@@ -13,7 +13,10 @@ from .exceptions import EppLoginError, EppConnectionError
 from .doc import (EppResponse, EppHello, EppLoginCommand, EppLogoutCommand,
                   EppCreateCommand, EppUpdateCommand, EppRenewCommand, EppTransferCommand, EppDeleteCommand)
 from .utils import gen_trid
-from backports.ssl_match_hostname import match_hostname, CertificateError
+try:
+    from ssl import match_hostname, CertificateError
+except ImportError:
+    from backports.ssl_match_hostname import match_hostname, CertificateError
 
 
 class EppClient(object):
@@ -55,7 +58,7 @@ class EppClient(object):
             if self.validate_hostname:
                 try:
                     match_hostname(self.sock.getpeercert(), host)
-                except CertificateError, e:
+                except CertificateError as e:
                     self.log.exception("SSL hostname mismatch")
                     raise EppConnectionError(str(e))
 

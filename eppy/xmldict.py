@@ -10,7 +10,7 @@ functions to convert an XML file into a python dict, back and forth
 """
 __author__ = "Wil Tan <wil@cloudregistry.net>"
 
-from StringIO import StringIO
+from six import StringIO
 
 # hack: LCGCMT had the py-2.5 xml.etree module hidden by mistake.
 #       this is to import it, by hook or by crook
