@@ -74,7 +74,7 @@ class EppClient(object):
               clTRID=None):
         if not self.sock:
             self.connect(self.host, self.port)
-            self.greeting = EppResponse.from_xml(self.read())
+            self.greeting = EppResponse.from_xml(self.read().decode('utf-8'))
 
         cmd = EppLoginCommand(obj_uris=obj_uris, extra_obj_uris=extra_obj_uris, extra_ext_uris=extra_ext_uris)
         cmd.clID = clID
@@ -103,7 +103,7 @@ class EppClient(object):
             raise IOError("No size header read")
 
         size_remaining = siz = struct.unpack(">I", siz)[0] - 4
-        data = ''
+        data = b''
         while size_remaining:
             buf = recvmeth(size_remaining)
             if not buf:
@@ -137,11 +137,11 @@ class EppClient(object):
 
     def send(self, doc, log_send_recv=True, extra_nsmap=None, strip_hints=True):
         self._gen_cltrid(doc)
-        buf = doc.to_xml(force_prefix=True).encode('utf-8')
+        buf = doc.to_xml(force_prefix=True)
         if log_send_recv:
-            self.log.debug("SEND %s: %s", self.remote_info(), buf)
+            self.log.debug("SEND %s: %s", self.remote_info(), buf.decode('utf-8'))
         self.write(buf)
-        r = self.read()
+        r = self.read().decode('utf-8')
         if log_send_recv:
             self.log.debug("RECV %s: %s", self.remote_info(), r)
         resp = EppResponse.from_xml(r, extra_nsmap=extra_nsmap)

@@ -10,7 +10,7 @@ functions to convert an XML file into a python dict, back and forth
 """
 __author__ = "Wil Tan <wil@cloudregistry.net>"
 
-from six import StringIO
+from six import StringIO, iteritems, text_type
 
 # hack: LCGCMT had the py-2.5 xml.etree module hidden by mistake.
 #       this is to import it, by hook or by crook
@@ -63,7 +63,7 @@ class XmlDictObject(dict):
 
         nsmap_r = {}
         # build reverse map
-        for prefix, uri in nsmap.iteritems():
+        for prefix, uri in iteritems(nsmap):
             if uri in nsmap_r and not prefix: # default prefix should not override anything already in the rmap
                 continue
             nsmap_r[uri] = prefix
@@ -88,7 +88,7 @@ class XmlDictObject(dict):
 
 
     def __setattr__(self, item, value):
-        if not self.__dict__.has_key('_XmlDictObject__initialized'):
+        if '_XmlDictObject__initialized' not in self.__dict__:
             # this test allows attributes to be set in the __init__ method
             return super(XmlDictObject, self).__setattr__(item, value)
 
@@ -126,7 +126,7 @@ class XmlDictObject(dict):
     def wrap(x):
         if isinstance(x, dict):
             return XmlDictObject ((k, XmlDictObject.wrap(v))
-                                  for (k, v) in x.iteritems())
+                                  for (k, v) in iteritems(x))
         elif isinstance(x, list):
             return [XmlDictObject.wrap(v) for v in x]
         else:
@@ -136,7 +136,7 @@ class XmlDictObject(dict):
     def _unwrap(x):
         if isinstance(x, dict):
             return dict ((k, XmlDictObject._unwrap(v))
-                         for (k, v) in x.iteritems())
+                         for (k, v) in iteritems(x))
         elif isinstance(x, list):
             return [XmlDictObject._unwrap(v) for v in x]
         else:
@@ -169,20 +169,20 @@ def _dict2xml_recurse(parent, dictitem, nsmap, current_prefixes, childorder, for
     if '_order' in dictitem or '__order' in childorder:
         ordr = dictitem.get('_order') or childorder.get('__order', [])
         nodeorder = dict((name, i) for i,name in enumerate(ordr))
-        items = sorted(dictitem.iteritems(), key=lambda x: nodeorder.get(x[0].split(":")[-1], 0))
+        items = sorted(iteritems(dictitem), key=lambda x: nodeorder.get(x[0].split(":")[-1], 0))
     else:
-        items = dictitem.iteritems()
+        items = iteritems(dictitem)
 
     parent_prefix = parent.tag.partition(':')[0] if ':' in parent.tag else ''
     for (tag, child) in items:
         if tag in ('_order', '_nsmap'):
             continue
         if tag == '_text':
-            parent.text = unicode(child)
+            parent.text = text_type(child)
         elif tag.startswith("@"):
             attrname = tag[1:]
             _do_xmlns(parent, attrname, current_prefixes, nsmap, set_default_ns=False)
-            parent.set(attrname, unicode(child))
+            parent.set(attrname, text_type(child))
         elif type(child) in (list, tuple):
             for listchild in child:
                 nsmap_recurs = nsmap
@@ -215,7 +215,7 @@ def _dict2xml_recurse(parent, dictitem, nsmap, current_prefixes, childorder, for
                                       childorder=childorder.get(reltag, {}),
                                       force_prefix=force_prefix)
                 else:
-                    elem.text = unicode(listchild)
+                    elem.text = text_type(listchild)
         else:
             nsmap_recurs = nsmap.copy()
             prefixes_recurs = current_prefixes.copy()
@@ -247,7 +247,7 @@ def _dict2xml_recurse(parent, dictitem, nsmap, current_prefixes, childorder, for
                                   childorder=childorder.get(reltag, {}),
                                   force_prefix=force_prefix)
             else:
-                elem.text = unicode(child)
+                elem.text = text_type(child)
 
 
 def _do_xmlns(elem, tag, prefixes, nsmap, set_default_ns=True):
@@ -274,7 +274,7 @@ def _do_xmlns(elem, tag, prefixes, nsmap, set_default_ns=True):
 
 def dict2xml(xmldict, childorder, force_prefix=False):
     """convert a python dictionary into an XML tree"""
-    roottag = filter(lambda x: not x.startswith("_"), xmldict.keys())[0]
+    roottag = list(filter(lambda x: not x.startswith("_"), xmldict.keys()))[0]
     root = ElementTree.Element(roottag)
 
     prefixes = set()

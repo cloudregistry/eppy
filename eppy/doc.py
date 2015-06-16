@@ -1,6 +1,7 @@
 from eppy.xmldict import XmlDictObject, _BASE_NSMAP, dict2xml, ElementTree
 import copy
 from . import childorder
+from six import iteritems
 from .utils import gen_trid
 
 
@@ -167,7 +168,7 @@ class EppLoginCommand(EppCommand):
 
         if not hasattr(self, 'svcs'):
             extra_obj_uris = extra_obj_uris or []
-            obj_uris = copy.copy(obj_uris or EPP_STD_OBJECTS_MAP.values())
+            obj_uris = copy.copy(obj_uris or list(EPP_STD_OBJECTS_MAP.values()))
             for uri in extra_obj_uris:
                 if ':' not in uri:
                     # if no colon, treat it as a well-known namespace prefix
@@ -320,7 +321,7 @@ class EppUpdateDomainCommand(EppUpdateCommand):
 
     def add_secdns_data(self, data):
         secdns_data = dict()
-        for action, value in data.iteritems():
+        for action, value in iteritems(data):
             update_data_key = 'secDNS:%s' % action
             update_data = list()
             tmp_dict = dict()
@@ -334,16 +335,16 @@ class EppUpdateDomainCommand(EppUpdateCommand):
                     order = ['keyTag', 'alg', 'digestType', 'digest']
                 else:
                     order = ['flags', 'protocol', 'alg', 'pubKey']
-                record_data = dict(('secDNS:%s' % k, v) for k, v in item['data'].iteritems())
+                record_data = dict(('secDNS:%s' % k, v) for k, v in iteritems(item['data']))
                 record_data['_order'] = order
                 update_data.append({record_key: record_data})
             for item in update_data:
-                for key, val in item.iteritems():
+                for key, val in iteritems(item):
                     if key in tmp_dict:
                         tmp_dict[key].append(val)
                     else:
                         tmp_dict[key] = [val, ]
-            update_data = [{k: v[0] if len(v) == 1 else v} for k, v in tmp_dict.iteritems()]
+            update_data = [{k: v[0] if len(v) == 1 else v} for k, v in iteritems(tmp_dict)]
             secdns_data[update_data_key] = update_data
         self['epp']['command'].setdefault('extension', {})['secDNS:update'] = secdns_data
 
