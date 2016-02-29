@@ -537,12 +537,8 @@ class EppResponse(EppDoc):
         else:
             return None
 
-    @property
-    def response_extension(self):
-        return self['epp']['response']['extension']
-
-    def get_response_extension(self, key):
-        return self.response_extension[key]
+    def get_response_extension(self, key, default=None):
+        return getattr(self, 'extension', {}).get(key, default)
 
 
 def dpath_get(dct, path, default=None):
