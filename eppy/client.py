@@ -20,7 +20,8 @@ class EppClient(object):
     def __init__(self, host=None, port=700,
                  ssl_enable=True, ssl_keyfile=None, ssl_certfile=None, ssl_cacerts=None,
                  ssl_version=None, ssl_ciphers=None,
-                 ssl_validate_hostname=True, socket_timeout=60, socket_connect_timeout=15):
+                 ssl_validate_hostname=True, socket_timeout=60, socket_connect_timeout=15,
+                 ssl_validate_cert=True):
         self.host = host
         self.port = port
         self.ssl_enable = ssl_enable
@@ -39,6 +40,10 @@ class EppClient(object):
         self.sock = None
         self.greeting = None
 
+        if ssl_validate_cert:
+            self.cert_required = ssl.CERT_REQUIRED
+        else:
+            self.cert_required = ssl.CERT_NONE
 
     def connect(self, host, port=None):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -50,7 +55,7 @@ class EppClient(object):
                                         ssl_version=self.ssl_version,
                                         ciphers=self.ssl_ciphers,
                                         server_side=False,
-                                        cert_reqs=ssl.CERT_REQUIRED,
+                                        cert_reqs=self.cert_required,
                                         ca_certs=self.cacerts)
             if self.validate_hostname:
                 try:
