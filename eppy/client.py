@@ -99,10 +99,13 @@ class EppClient(object):
 
     def read(self):
         recvmeth = self.sock.read if self.ssl_enable else self.sock.recv
-        siz = recvmeth(4)
-        if not siz:
-            self.close()
-            raise IOError("No size header read")
+        siz = ''
+        while len(siz) < 4:
+            siz += recvmeth(4 - len(siz))
+            if not siz:
+                # empty string after read means EOF
+                self.close()
+                raise IOError("No size header read")
 
         size_remaining = siz = struct.unpack(">I", siz)[0] - 4
         data = ''
