@@ -177,6 +177,10 @@ def _dict2xml_recurse(parent, dictitem, nsmap, current_prefixes, childorder, for
     for (tag, child) in items:
         if tag in ('_order', '_nsmap'):
             continue
+        if child is None:
+            # None means we should not output this element
+            continue
+
         if tag == '_text':
             parent.text = unicode(child)
         elif tag.startswith("@"):
