@@ -10,6 +10,6 @@ setup(
     author_email = "wil@cloudregistry.net",
     description = "EPP Client for Python",
     license = "MIT/X",
-    install_requires = [],
+    install_requires = ["backports.ssl_match_hostname"],
     packages = ['eppy']
 )
