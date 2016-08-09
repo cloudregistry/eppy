@@ -35,11 +35,15 @@ way via ``easy_install`` or pip_.
 
 ::
 
-   pip install eppy
+   pip install EPP
 
 or using distribute_::
 
-   easy_install eppy
+   easy_install EPP
+
+
+NOTE: While the module name is ``eppy``, the package on PyPI is named EPP
+because `eppy` was already taken by another unrelated project.
 
 
 Bleeding Edge
@@ -50,7 +54,7 @@ repository instead.
 
 ::
 
-   pip install -e git+https://github.com/cloudregistry/eppy.git#egg=eppy
+   pip install -e git+https://github.com/cloudregistry/eppy.git#egg=EPP
 
 
 
@@ -77,7 +81,7 @@ Examples can be found in the ``examples`` directory.
 Working with EPP commands and responses
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-EPP documents can be sent as strings using the `EppClient.write` method.
+EPP documents can be sent as strings using the ``EppClient.write`` method.
 Alternatively, use the provided :class:`EPPDoc` subclasses.
 
 ::
