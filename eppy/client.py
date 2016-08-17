@@ -102,7 +102,7 @@ class EppClient(object):
 
     def read(self):
         recvmeth = self.sock.read if self.ssl_enable else self.sock.recv
-        siz = ''
+        siz = b''
         while len(siz) < 4:
             siz += recvmeth(4 - len(siz))
             if not siz:
@@ -140,7 +140,7 @@ class EppClient(object):
         for doc in docs:
             buf.append(struct.pack(">I", 4+len(doc)))
             buf.append(doc)
-        writemeth(''.join(buf))
+        writemeth(b''.join(buf))
 
 
     def send(self, doc, log_send_recv=True, extra_nsmap=None, strip_hints=True):
