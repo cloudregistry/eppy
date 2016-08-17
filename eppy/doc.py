@@ -458,6 +458,8 @@ class EppResponse(EppDoc):
         # successfully, multiple <result> elements MAY be returned to
         # document failure conditions.
         ('epp', 'response', 'result'),
+        ('epp', 'response', 'result', 'value'),
+        ('epp', 'response', 'result', 'extValue'),
         ('epp', 'response', 'resData', 'domain:infData', 'status'),
         ('epp', 'response', 'resData', 'domain:infData', 'ns', 'hostObj'),
         ('epp', 'response', 'resData', 'domain:infData', 'host'),
@@ -508,13 +510,23 @@ class EppResponse(EppDoc):
             if isinstance(m, dict):
                 m = m.get('_text', u'')
 
-            value = res.get('value', [{}])
-            if isinstance(value, dict):
-                value = [value]
-            # take the first
-            valuemsg = u', '.join(value[0].values())
-            if valuemsg:
-                m = u'{}; {}'.format(m, valuemsg)
+            value = res.get('value', [{}])[0]
+            if value:
+                if isinstance(value, basestring):
+                    m = u'{}; {}'.format(m, value)
+                if isinstance(value, dict):
+                    # afilias message looks like {'{urn:afilias:params:xml:ns:oxrs-1.1}xcp': 'detailed message'}
+                    valuemsg = u', '.join(value.values())
+                    if valuemsg:
+                        m = u'{}; {}'.format(m, valuemsg)
+
+            ext_value = res.get('extValue', [{}])[0]  # take the first one
+            reason = ext_value.get('reason', {}) if isinstance(ext_value, dict) else ''
+            if reason:
+                if isinstance('reason', dict):
+                    reason = reason.get('_text', '')
+                if reason:
+                    m = u'{}; {}'.format(m, reason)
             return m
         else:
             return ''
@@ -526,12 +538,8 @@ class EppResponse(EppDoc):
         else:
             return None
 
-    @property
-    def response_extension(self):
-        return self['epp']['response']['extension']
-
-    def get_response_extension(self, key):
-        return self.response_extension[key]
+    def get_response_extension(self, key, default=None):
+        return getattr(self, 'extension', {}).get(key, default)
 
 
 def dpath_get(dct, path, default=None):

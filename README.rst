@@ -29,17 +29,19 @@ If you're using a virtualenv_ (almost always a good idea), activate it first.
 Stable
 ^^^^^^
 
-Stable versions are released onto `PyPI`_ and can be installed in the normal
-way via ``easy_install`` or pip_.
-
+To install ``eppy``:
 
 ::
 
-   pip install eppy
+   pip install EPP
 
-or using distribute_::
+or::
 
-   easy_install eppy
+   easy_install EPP
+
+
+NOTE: While the module name is ``eppy``, the package on PyPI is named EPP
+because `eppy` was already taken by another unrelated project.
 
 
 Bleeding Edge
@@ -50,7 +52,7 @@ repository instead.
 
 ::
 
-   pip install -e git+https://github.com/cloudregistry/eppy.git#egg=eppy
+   pip install -e git+https://github.com/cloudregistry/eppy.git#egg=EPP
 
 
 
@@ -77,8 +79,8 @@ Examples can be found in the ``examples`` directory.
 Working with EPP commands and responses
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-EPP documents can be sent as strings using the `EppClient.write` method.
-Alternatively, use the provided :class:`EPPDoc` subclasses.
+EPP documents can be sent as strings using the ``EppClient.write`` method.
+Alternatively, use the provided ``EPPDoc`` subclasses.
 
 ::
    >>> from eppy.doc import EppInfoDomainCommand
@@ -100,10 +102,10 @@ Alternatively, use the provided :class:`EPPDoc` subclasses.
 
 
 
-Using :class:`XmlDictObject`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Using ``XmlDictObject``
+^^^^^^^^^^^^^^^^^^^^^^^
 
-:class:`XmlDictObject` is a convenience wrapper for generating and reading EPP
+``XmlDictObject`` is a convenience wrapper for generating and reading EPP
 documents by translating to and from Python dictionary.
 
 ::
@@ -117,6 +119,7 @@ documents by translating to and from Python dictionary.
 Creating a child element with an attribute and text node:
 
 ::
+
    >>> o['x'] = {'d': {'@a': 'true', '_text': '1'}}
    >>> print o.to_xml({})
    <x>
@@ -127,6 +130,7 @@ Creating a child element with an attribute and text node:
 As a shorthand for elements without attributes:
 
 ::
+
    >>> o['x'] = {'d': 1}
    >>> print o.to_xml({})
    <x>
@@ -152,8 +156,3 @@ Multiple elements?
 .. _`PyPI`: http://pypi.python.org/pypi
 .. _pip: http://www.pip-installer.org/
 .. _virtualenv: http://www.virtualenv.org/
-
-.. rubric:: Footnotes
-
-.. [#pip] http://www.pip-installer.org/
-
