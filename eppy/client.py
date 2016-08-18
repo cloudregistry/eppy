@@ -13,6 +13,7 @@ except ImportError:
 import struct
 from collections import deque
 import logging
+from six import PY2, PY3
 from past.builtins import xrange # Python 2 backwards compatibility
 from .exceptions import EppLoginError, EppConnectionError
 from .doc import (EppResponse, EppHello, EppLoginCommand, EppLogoutCommand,
@@ -155,7 +156,12 @@ class EppClient(object):
     def write(self, data):
         writemeth = self.sock.write if self.ssl_enable else self.sock.sendall
         siz = struct.pack(">I", 4 + len(data))
-        writemeth(siz + data)
+
+        if PY3:
+            datad = str.encode(data) if type(data) is str else data
+            writemeth(siz + datad)
+        else:
+            writemeth(siz + data)
 
     def write_many(self, docs):
         """
@@ -241,7 +247,7 @@ class EppClient(object):
                 out.append(EppResponse.from_xml(r_buf))
                 recved += 1
         # pylint: disable=w0702
-        except:
+        except Exception as exp:
             self.log.error(
                 "Failed to receive all responses (recv'ed %d/%d)", recved, sent)
             # pad the rest with None

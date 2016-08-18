@@ -10,7 +10,7 @@ functions to convert an XML file into a python dict, back and forth
 
 __author__ = "Wil Tan <wil@cloudregistry.net>"
 from xml.etree import ElementTree
-from six import StringIO, iteritems, text_type
+from six import StringIO, iteritems, text_type, PY2, PY3
 
 # hack: LCGCMT had the py-2.5 xml.etree module hidden by mistake.
 #       this is to import it, by hook or by crook
@@ -153,7 +153,11 @@ class XmlDictObject(dict):
 
     @classmethod
     def from_xml(cls, buf, default_prefix=None, extra_nsmap=None):
-        root = ElementTree.parse(StringIO(buf)).getroot()
+        if PY2:
+            root = ElementTree.parse(StringIO(buf)).getroot()
+        else: 
+            root = ElementTree.fromstring(buf)
+        
         rv = xml2dict(
             root,
             outerclass=cls,

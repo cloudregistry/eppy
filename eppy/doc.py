@@ -4,7 +4,7 @@ import copy
 from eppy.xmldict import XmlDictObject
 from eppy.xmldict import _BASE_NSMAP
 from past.builtins import unicode, basestring # Python 2 backwards compatibility
-from six import iteritems
+from six import iteritems, PY2, PY3
 from . import childorder
 from .utils import gen_trid
 
@@ -59,8 +59,12 @@ class EppDoc(XmlDictObject):
     def __unicode__(self):
         return self.to_xml(force_prefix=False)
 
-    def __str__(self):
-        return unicode(self).encode('utf-8')
+    if PY2:
+        def __str__(self):
+            return unicode(self).encode('utf-8')
+    elif PY3:
+        def __str__(self):
+            return str(self.__unicode__(), 'utf-8')
 
     # pylint: disable=w0212, e1101
     @classmethod
