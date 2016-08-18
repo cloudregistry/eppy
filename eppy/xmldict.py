@@ -78,18 +78,18 @@ class XmlDictObject(dict):
         self.__initialized = True
 
     def __getattr__(self, item):
-        it = self
-        for p in self._path:
-            it = it[p]
-        if item in it:
-            return it[item]
+        items = self
+        for path in self._path:
+            items = items[path]
+        if item in items:
+            return items[item]
         else:
             # we are calling the `dict` version of __str__ in case the regular __str__ implementation got overridden
             # by a subclass that somehow calls this method again causing an
             # unterminated recursion
             raise AttributeError("no such node (%s/%s) in: %r (self=%s)" % ('/'.join(self._path),
                                                                             item,
-                                                                            it,
+                                                                            items,
                                                                             dict.__str__(self)))
 
     def __setattr__(self, item, value):
@@ -101,23 +101,23 @@ class XmlDictObject(dict):
             super(XmlDictObject, self).__setattr__(item, value)
             return
 
-        it = self
-        for p in self._path:
-            it = it.__getitem__(p)
+        items = self
+        for path in self._path:
+            items = items.__getitem__(path)
 
         if isinstance(value, dict):
             value = XmlDictObject(value)
-        return it.__setitem__(item, value)
+        return items.__setitem__(item, value)
 
     def __delattr__(self, item):
         if item.startswith("__"):
             super(XmlDictObject, self).__delattr__(item)
             return
 
-        it = self
-        for p in self._path:
-            it = it.__getitem__(p)
-        return it.__delitem__(item)
+        items = self
+        for path in self._path:
+            items = items.__getitem__(path)
+        return items.__delitem__(item)
 
     def __str__(self):
         if '_text' in self:

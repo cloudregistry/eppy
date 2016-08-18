@@ -1,5 +1,6 @@
 import gevent.pool
 import time
+from past.builtins import xrange # Python 2 backwards compatibility
 from .connector import Connector
 
 

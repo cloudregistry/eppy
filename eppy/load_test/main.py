@@ -1,8 +1,10 @@
-from gevent import monkey
-monkey.patch_all()
+# pylint: disable=W0614, w0401, w0611, e0401
 from eppy.load_test import *
-import sys
 from optparse import OptionParser
+from gevent import monkey # pylint: disable=W0614, w0401, w0611, e0401
+monkey.patch_all()
+import sys
+import logging
 
 
 def main():
