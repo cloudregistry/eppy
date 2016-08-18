@@ -20,6 +20,7 @@ except ImportError:
 
 
 class EppClient(object):
+
     def __init__(self, host=None, port=700,
                  ssl_enable=True, ssl_keyfile=None, ssl_certfile=None, ssl_cacerts=None,
                  ssl_version=None, ssl_ciphers=None,
@@ -32,7 +33,8 @@ class EppClient(object):
         # SSLv2 should be disabled by most OpenSSL build
         self.ssl_version = ssl_version or ssl.PROTOCOL_SSLv23
         # `ssl_ciphers`, if given, should be a string (https://www.openssl.org/docs/apps/ciphers.html)
-        self.ssl_ciphers = ssl_ciphers  # if not given, use the default in Python version (`ssl._DEFAULT_CIPHERS`)
+        # if not given, use the default in Python version (`ssl._DEFAULT_CIPHERS`)
+        self.ssl_ciphers = ssl_ciphers
         self.keyfile = ssl_keyfile
         self.certfile = ssl_certfile
         self.cacerts = ssl_cacerts
@@ -67,10 +69,8 @@ class EppClient(object):
                     self.log.exception("SSL hostname mismatch")
                     raise EppConnectionError(str(e))
 
-
     def remote_info(self):
         return '{}:{}'.format(*self.sock.getpeername())
-
 
     def hello(self, log_send_recv=False):
         return self.send(EppHello(), log_send_recv=log_send_recv)
@@ -81,7 +81,10 @@ class EppClient(object):
             self.connect(self.host, self.port)
             self.greeting = EppResponse.from_xml(self.read().decode('utf-8'))
 
-        cmd = EppLoginCommand(obj_uris=obj_uris, extra_obj_uris=extra_obj_uris, extra_ext_uris=extra_ext_uris)
+        cmd = EppLoginCommand(
+            obj_uris=obj_uris,
+            extra_obj_uris=extra_obj_uris,
+            extra_ext_uris=extra_ext_uris)
         cmd.clID = clID
         cmd.pw = pw
         if clTRID:
@@ -99,7 +102,6 @@ class EppClient(object):
             cmd['epp']['command']['clTRID'] = clTRID
         return self.send(cmd)
 
-
     def read(self):
         recvmeth = self.sock.read if self.ssl_enable else self.sock.recv
         siz = b''
@@ -116,19 +118,19 @@ class EppClient(object):
             buf = recvmeth(size_remaining)
             if not buf:
                 self.close()
-                raise IOError("Short / no data read (expected %d bytes, got %d)" % (siz, len(data)))
+                raise IOError(
+                    "Short / no data read (expected %d bytes, got %d)" %
+                    (siz, len(data)))
             size_remaining -= len(buf)
             data += buf
 
         return data
         #self.log.debug("read total %d bytes:\n%s\n" % (siz+4, data))
 
-
     def write(self, data):
         writemeth = self.sock.write if self.ssl_enable else self.sock.sendall
-        siz = struct.pack(">I", 4+len(data))
+        siz = struct.pack(">I", 4 + len(data))
         writemeth(siz + data)
-
 
     def write_many(self, docs):
         """
@@ -138,10 +140,9 @@ class EppClient(object):
         writemeth = self.sock.write if self.ssl_enable else self.sock.sendall
         buf = []
         for doc in docs:
-            buf.append(struct.pack(">I", 4+len(doc)))
+            buf.append(struct.pack(">I", 4 + len(doc)))
             buf.append(doc)
         writemeth(b''.join(buf))
-
 
     def send(self, doc, log_send_recv=True, extra_nsmap=None, strip_hints=True):
         self._gen_cltrid(doc)
@@ -197,7 +198,9 @@ class EppClient(object):
                     self.write(str(doc))
                     sent += 1
         except:
-            self.log.error("Failed to send all commands (sent %d/%d)" % (sent, ndocs))
+            self.log.error(
+                "Failed to send all commands (sent %d/%d)" %
+                (sent, ndocs))
             if failfast:
                 raise
 
@@ -211,13 +214,14 @@ class EppClient(object):
                 out.append(EppResponse.from_xml(r))
                 recved += 1
         except:
-            self.log.error("Failed to receive all responses (recv'ed %d/%d)" % (recved, sent))
+            self.log.error(
+                "Failed to receive all responses (recv'ed %d/%d)" %
+                (recved, sent))
             # pad the rest with None
-            for _ in xrange(sent-len(out)):
+            for _ in xrange(sent - len(out)):
                 out.append(None)
 
         return out
-
 
     def write_split(self, data):
         """
@@ -226,11 +230,10 @@ class EppClient(object):
         then the rest of the payload in another call.
         """
         writemeth = self.sock.sendall if self.ssl_enable else self.sock.sendall
-        siz = struct.pack(">I", 4+len(data))
-        self.log.debug("siz=%d" % (4+len(data)))
+        siz = struct.pack(">I", 4 + len(data))
+        self.log.debug("siz=%d" % (4 + len(data)))
         writemeth(siz + data[:4])
         writemeth(data[4:])
-
 
     def write_splitsize(self, data):
         """
@@ -239,12 +242,11 @@ class EppClient(object):
         then the payload in another call.
         """
         writemeth = self.sock.sendall if self.ssl_enable else self.sock.sendall
-        siz = struct.pack(">I", 4+len(data))
-        self.log.debug("siz=%d" % (4+len(data)))
+        siz = struct.pack(">I", 4 + len(data))
+        self.log.debug("siz=%d" % (4 + len(data)))
         writemeth(siz[:2])
         writemeth(siz[2:])
         writemeth(data)
-
 
     def write_splitall(self, data):
         """
@@ -253,8 +255,8 @@ class EppClient(object):
         then 4 bytes of the payload, then the rest of the payload.
         """
         writemeth = self.sock.sendall if self.ssl_enable else self.sock.sendall
-        siz = struct.pack(">I", 4+len(data))
-        self.log.debug("siz=%d" % (4+len(data)))
+        siz = struct.pack(">I", 4 + len(data))
+        self.log.debug("siz=%d" % (4 + len(data)))
         writemeth(siz[:2])
         writemeth(siz[2:])
         writemeth(data[:4])
@@ -265,7 +267,8 @@ class EppClient(object):
         self.sock = None
 
     def _gen_cltrid(self, doc):
-        if isinstance(doc, (EppLoginCommand, EppCreateCommand, EppUpdateCommand, EppDeleteCommand, EppTransferCommand, EppRenewCommand)):
+        if isinstance(doc, (EppLoginCommand, EppCreateCommand, EppUpdateCommand,
+                            EppDeleteCommand, EppTransferCommand, EppRenewCommand)):
             cmd_node = doc['epp']['command']
             if not cmd_node.get('clTRID'):
                 cmd_node['clTRID'] = gen_trid()
@@ -304,8 +307,10 @@ class EppClient(object):
         import ctypes
         import ctypes.util
 
-        size_pyobject_head = ctypes.sizeof(ctypes.c_long) + ctypes.sizeof(ctypes.c_voidp)
-        real_ssl_offset = size_pyobject_head + ctypes.sizeof(ctypes.c_voidp) * 2 # skip PySocketSockObject* and SSL_CTX*
+        size_pyobject_head = ctypes.sizeof(
+            ctypes.c_long) + ctypes.sizeof(ctypes.c_voidp)
+        # skip PySocketSockObject* and SSL_CTX*
+        real_ssl_offset = size_pyobject_head + ctypes.sizeof(ctypes.c_voidp) * 2
         ssl_p = ctypes.c_voidp.from_address(id(self.sock._sslobj) + real_ssl_offset)
         # libssl = ctypes.cdll.LoadLibrary('/usr/local/opt/openssl/lib/libssl.1.0.0.dylib')
         libssl = ctypes.cdll.LoadLibrary(ctypes.util.find_library('ssl'))
