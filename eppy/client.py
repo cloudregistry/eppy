@@ -1,3 +1,7 @@
+"""
+Module that implements the EppClient class
+"""
+
 try:
     # use gevent if available
     import gevent.socket as socket
@@ -9,9 +13,11 @@ except ImportError:
 import struct
 from collections import deque
 import logging
+from past.builtins import xrange # Python 2 backwards compatibility
 from .exceptions import EppLoginError, EppConnectionError
 from .doc import (EppResponse, EppHello, EppLoginCommand, EppLogoutCommand,
-                  EppCreateCommand, EppUpdateCommand, EppRenewCommand, EppTransferCommand, EppDeleteCommand)
+                  EppCreateCommand, EppUpdateCommand, EppRenewCommand,
+                  EppTransferCommand, EppDeleteCommand)
 from .utils import gen_trid
 try:
     from ssl import match_hostname, CertificateError
@@ -20,6 +26,11 @@ except ImportError:
 
 
 class EppClient(object):
+    """
+    EPP client class
+    """
+    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-arguments
 
     def __init__(self, host=None, port=700,
                  ssl_enable=True, ssl_keyfile=None, ssl_certfile=None, ssl_cacerts=None,
@@ -32,7 +43,8 @@ class EppClient(object):
         # PROTOCOL_SSLv23 gives the best proto version available (including TLSv1 and above)
         # SSLv2 should be disabled by most OpenSSL build
         self.ssl_version = ssl_version or ssl.PROTOCOL_SSLv23
-        # `ssl_ciphers`, if given, should be a string (https://www.openssl.org/docs/apps/ciphers.html)
+        # `ssl_ciphers`, if given, should be a string
+        # (https://www.openssl.org/docs/apps/ciphers.html)
         # if not given, use the default in Python version (`ssl._DEFAULT_CIPHERS`)
         self.ssl_ciphers = ssl_ciphers
         self.keyfile = ssl_keyfile
@@ -51,6 +63,9 @@ class EppClient(object):
             self.cert_required = ssl.CERT_NONE
 
     def connect(self, host, port=None):
+        """
+        Method that initiates a connection to an EPP host
+        """
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.settimeout(self.socket_connect_timeout)  # connect timeout
         self.sock.connect((host, port or self.port))
@@ -65,18 +80,26 @@ class EppClient(object):
             if self.validate_hostname:
                 try:
                     match_hostname(self.sock.getpeercert(), host)
-                except CertificateError as e:
+                except CertificateError as exp:
                     self.log.exception("SSL hostname mismatch")
-                    raise EppConnectionError(str(e))
+                    raise EppConnectionError(str(exp))
 
     def remote_info(self):
+        """
+        Method that returns the remote peer name
+        """
         return '{}:{}'.format(*self.sock.getpeername())
 
     def hello(self, log_send_recv=False):
+        """
+        Method to send EppHello()
+        """
         return self.send(EppHello(), log_send_recv=log_send_recv)
 
-    def login(self, clID, pw, newPW=None, raise_on_fail=True, obj_uris=None, extra_obj_uris=None, extra_ext_uris=None,
-              clTRID=None):
+    # pylint: disable=c0103
+
+    def login(self, clID, pw, newPW=None, raise_on_fail=True,
+              obj_uris=None, extra_obj_uris=None, extra_ext_uris=None, clTRID=None):
         if not self.sock:
             self.connect(self.host, self.port)
             self.greeting = EppResponse.from_xml(self.read().decode('utf-8'))
@@ -101,6 +124,8 @@ class EppClient(object):
         if clTRID:
             cmd['epp']['command']['clTRID'] = clTRID
         return self.send(cmd)
+
+    # pylint: enable=c0103
 
     def read(self):
         recvmeth = self.sock.read if self.ssl_enable else self.sock.recv
@@ -150,33 +175,35 @@ class EppClient(object):
         if log_send_recv:
             self.log.debug("SEND %s: %s", self.remote_info(), buf.decode('utf-8'))
         self.write(buf)
-        r = self.read().decode('utf-8')
+        r_buf = self.read().decode('utf-8')
         if log_send_recv:
-            self.log.debug("RECV %s: %s", self.remote_info(), r)
-        resp = EppResponse.from_xml(r, extra_nsmap=extra_nsmap)
+            self.log.debug("RECV %s: %s", self.remote_info(), r_buf)
+        resp = EppResponse.from_xml(r_buf, extra_nsmap=extra_nsmap)
         if strip_hints:
             self.strip_hints(resp)
         doc.normalize_response(resp)
         return resp
 
-    def strip_hints(self, data):
+    @staticmethod
+    def strip_hints(data):
         """
-        Remove various cruft from the given EppDoc (useful for responses where we don't care about _order etc.
+        Remove various cruft from the given EppDoc
+        (useful for responses where we don't care about _order etc.)
         """
         stack = deque([data])
         while len(stack):
             current = stack.pop()
-            for k in list(current.keys()):
-                if k in ('@xsi:schemaLocation', '_order'):
-                    del current[k]
+            for key in list(current.keys()):
+                if key in ('@xsi:schemaLocation', '_order'):
+                    del current[key]
                 else:
-                    v = current[k]
-                    if isinstance(v, dict):
+                    val = current[key]
+                    if isinstance(val, dict):
                         # visit later
-                        stack.append(v)
-                    elif isinstance(v, list):
+                        stack.append(val)
+                    elif isinstance(val, list):
                         # visit each dict in the list
-                        for elem in v:
+                        for elem in val:
                             if isinstance(elem, dict):
                                 stack.append(elem)
         return data
@@ -197,10 +224,10 @@ class EppClient(object):
                 for doc in docs:
                     self.write(str(doc))
                     sent += 1
+        # pylint: disable=w0702
         except:
             self.log.error(
-                "Failed to send all commands (sent %d/%d)" %
-                (sent, ndocs))
+                "Failed to send all commands (sent %d/%d)", sent, ndocs)
             if failfast:
                 raise
 
@@ -210,17 +237,17 @@ class EppClient(object):
         try:
             out = []
             for _ in xrange(sent):
-                r = self.read()
-                out.append(EppResponse.from_xml(r))
+                r_buf = self.read()
+                out.append(EppResponse.from_xml(r_buf))
                 recved += 1
+        # pylint: disable=w0702
         except:
             self.log.error(
-                "Failed to receive all responses (recv'ed %d/%d)" %
-                (recved, sent))
+                "Failed to receive all responses (recv'ed %d/%d)", recved, sent)
             # pad the rest with None
             for _ in xrange(sent - len(out)):
                 out.append(None)
-
+        # pylint: enable=w0702
         return out
 
     def write_split(self, data):
@@ -231,7 +258,7 @@ class EppClient(object):
         """
         writemeth = self.sock.sendall if self.ssl_enable else self.sock.sendall
         siz = struct.pack(">I", 4 + len(data))
-        self.log.debug("siz=%d" % (4 + len(data)))
+        self.log.debug("siz=%d", (4 + len(data)))
         writemeth(siz + data[:4])
         writemeth(data[4:])
 
@@ -243,7 +270,7 @@ class EppClient(object):
         """
         writemeth = self.sock.sendall if self.ssl_enable else self.sock.sendall
         siz = struct.pack(">I", 4 + len(data))
-        self.log.debug("siz=%d" % (4 + len(data)))
+        self.log.debug("siz=%d", (4 + len(data)))
         writemeth(siz[:2])
         writemeth(siz[2:])
         writemeth(data)
@@ -256,7 +283,7 @@ class EppClient(object):
         """
         writemeth = self.sock.sendall if self.ssl_enable else self.sock.sendall
         siz = struct.pack(">I", 4 + len(data))
-        self.log.debug("siz=%d" % (4 + len(data)))
+        self.log.debug("siz=%d", (4 + len(data)))
         writemeth(siz[:2])
         writemeth(siz[2:])
         writemeth(data[:4])
@@ -266,7 +293,8 @@ class EppClient(object):
         self.sock.close()
         self.sock = None
 
-    def _gen_cltrid(self, doc):
+    @staticmethod
+    def _gen_cltrid(doc):
         if isinstance(doc, (EppLoginCommand, EppCreateCommand, EppUpdateCommand,
                             EppDeleteCommand, EppTransferCommand, EppRenewCommand)):
             cmd_node = doc['epp']['command']

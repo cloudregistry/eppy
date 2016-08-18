@@ -1,7 +1,10 @@
 import logging
 
+
 class ExecutionContext(object):
-    def __init__(self, host=None, port=None, ssl_key=None, ssl_cert=None, ssl_cacerts=None, userid=None, passwd=None):
+
+    def __init__(self, host=None, port=None, ssl_key=None, ssl_cert=None,
+                 ssl_cacerts=None, userid=None, passwd=None):
         self.host = host
         self.port = port
         self.ssl_key = ssl_key
@@ -10,10 +13,10 @@ class ExecutionContext(object):
         self.userid = userid
         self.passwd = passwd
         self.max_ident = 0
-        self.total_connected = 0 # ever connected
+        self.total_connected = 0  # ever connected
         self.num_connected = 0
         self.num_authenticated = 0
-        self.failed_connections = 0 # ever connected
+        self.failed_connections = 0  # ever connected
         self.num_commands_sent = 0
         self.num_responses_recved = 0
 
@@ -50,4 +53,3 @@ class ExecutionContext(object):
         print "%5d Authenticated" % self.num_authenticated
         print "%5d Commands sent" % self.num_commands_sent
         print "%5d Responses received" % self.num_responses_recved
-

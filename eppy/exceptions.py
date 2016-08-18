@@ -2,6 +2,7 @@ from .doc import EppResponse
 
 
 class EppException(Exception):
+
     def __init__(self, resp):
         if isinstance(resp, EppResponse):
             msg = "{%s} %s" % (resp.code, resp.msg)
@@ -13,6 +14,7 @@ class EppException(Exception):
 
 class EppConnectionError(EppException):
     pass
+
 
 class EppLoginError(EppException):
     pass
