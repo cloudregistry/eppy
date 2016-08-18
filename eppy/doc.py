@@ -1,3 +1,5 @@
+# pylint: disable=C0111
+
 from eppy.xmldict import XmlDictObject
 from eppy.xmldict import _BASE_NSMAP
 import copy
@@ -5,7 +7,6 @@ from past.builtins import unicode, basestring # Python 2 backwards compatibility
 from . import childorder
 from six import iteritems
 from .utils import gen_trid
-
 
 EPP_NSMAP = dict(_BASE_NSMAP)
 EPP_STD_OBJECTS_MAP = {
@@ -42,13 +43,14 @@ class EppDoc(XmlDictObject):
         super(EppDoc, self).__init__(dct, nsmap=nsmap, extra_nsmap=extra_nsmap)
 
     def to_xml(self, force_prefix):
-        # build a dictionary containing the definition of the order that child elements should be serialized
+        # build a dictionary containing the definition of the order that child elements
+        # should be serialized
         # NOTE: this does not contain the root element
         # ``self._childorder`` is defined relative to self._path, so we do some tree grafting here
         qualified_childorder = dpath_make(self._path[1:])
         if self._path[1:]:
             dpath_get(qualified_childorder, self._path[
-                      1:-1])[self._path[-1]] = self._childorder
+                1:-1])[self._path[-1]] = self._childorder
         else:
             qualified_childorder = self._childorder
         return super(EppDoc, self).to_xml(
@@ -60,16 +62,17 @@ class EppDoc(XmlDictObject):
     def __str__(self):
         return unicode(self).encode('utf-8')
 
+    # pylint: disable=w0212
     @classmethod
     def cmddef(cls):
         """
-        Create an `XmlDictObject` based on the `_path` defined, and goes through each super class to wire up
-        the _childorder
+        Create an `XmlDictObject` based on the `_path` defined, and goes through each
+        super class to wire up the _childorder
         """
         dct = dpath_make(cls._path)
 
-        # we need to search mro because if we just did `cls._childorder` it could come from any superclass,
-        # which may not correspond to the same level where `cls._path` is defined.
+        # we need to search mro because if we just did `cls._childorder` it could come from any
+        # superclass, which may not correspond to the same level where `cls._path` is defined.
         # Also, we want to be able to have each level define its own
         # childorder.
         for aclass in cls.__mro__:
@@ -79,21 +82,22 @@ class EppDoc(XmlDictObject):
 
             if '_childorder' in aclass.__dict__:
                 dpath_get(
-                    dct, aclass._path)['_order'] = aclass._childorder.get(
-                    '__order', tuple())
+                    dct, aclass._path)['_order'] = aclass._childorder.get('__order', tuple())
             if '_nsmap' in aclass.__dict__:
                 dpath_get(dct, aclass._path)['_nsmap'] = aclass._nsmap
         return dct
 
+    # pylint: disable=w0212
     @classmethod
     def annotate(cls, dct=None):
         """
-        annotate the given `dct` (or create an empty one) by wiring up the _childorder and _nsmap fields
+        annotate the given `dct` (or create an empty one) by wiring up the _childorder
+        and _nsmap fields
         """
         dct = dct or dpath_make(cls._path)
 
-        # we need to search mro because if we just did `cls._childorder` it could come from any superclass,
-        # which may not correspond to the same level where `cls._path` is defined.
+        # we need to search mro because if we just did `cls._childorder` it could come from any
+        # superclass, which may not correspond to the same level where `cls._path` is defined.
         # Also, we want to be able to have each level define its own
         # childorder.
         for aclass in cls.__mro__:
@@ -125,9 +129,9 @@ class EppDoc(XmlDictObject):
             if isinstance(child, (list, tuple)):
                 # if there are multiple elements, we need to put the `_order` key in each
                 # element
-                for c in child:
-                    if isinstance(c, dict):
-                        cls._annotate_order_recurse(c, childorder[k])
+                for elem in child:
+                    if isinstance(elem, dict):
+                        cls._annotate_order_recurse(elem, childorder[k])
 
     @classmethod
     def from_xml(cls, buf, default_prefix='epp', extra_nsmap=None):
@@ -152,7 +156,7 @@ class EppCommand(EppDoc):
         if hasattr(self, 'namestore_product') and self.namestore_product:
             self['epp']['command'].setdefault(
                 'extension', {})['namestoreExt:namestoreExt'] = {
-                'namestoreExt:subProduct': self.namestore_product}
+                    'namestoreExt:subProduct': self.namestore_product}
             del self.namestore_product
         if hasattr(self, 'phases') and self.phases:
             self.add_command_extension(self.phases)
@@ -162,9 +166,9 @@ class EppCommand(EppDoc):
     def add_command_extension(self, ext_dict):
         self['epp']['command'].setdefault(
             'extension', {}).update(
-            ext_dict.freeze() if isinstance(
-                ext_dict, EppDoc) else ext_dict)
-
+                ext_dict.freeze() if isinstance(
+                    ext_dict, EppDoc) else ext_dict)
+    # pylint: disable=c0103
     def add_clTRID(self, clTRID=None):
         self['epp']['command']['clTRID'] = clTRID or gen_trid()
 
@@ -173,18 +177,20 @@ class EppLoginCommand(EppCommand):
     _path = ('epp', 'command', 'login')
     _childorder = {'__order': childorder.CMD_LOGIN,
                    'svcs': {'__order': ['objURI', 'svcExtension']}}
-
+    # pylint: disable=r0913
+    # pylint: disable=w0613
     def __init__(self, dct=None, nsmap=None, extra_nsmap=None, obj_uris=None,
                  extra_obj_uris=None, extra_ext_uris=None, **kwargs):
         super(
             EppLoginCommand,
             self).__init__(
-            dct=None,
-            nsmap=nsmap,
-            extra_nsmap=extra_nsmap)
+                dct=None,
+                nsmap=nsmap,
+                extra_nsmap=extra_nsmap)
         dpath_get(self, self._path)
         if not hasattr(self, 'options'):
             self.options = {'version': '1.0', 'lang': 'en'}
+        # pylint: disable=w0212
         self.options._order = ['version', 'lang']
 
         if not hasattr(self, 'svcs'):
@@ -356,7 +362,7 @@ class EppUpdateDomainCommand(EppUpdateCommand):
                 record_data = dict(
                     ('secDNS:%s' %
                      k, v) for k, v in iteritems(
-                        item['data']))
+                         item['data']))
                 record_data['_order'] = order
                 update_data.append({record_key: record_data})
             for item in update_data:
@@ -518,6 +524,7 @@ class EppResponse(EppDoc):
         else:
             return '0000'
 
+    # pylint: disable=C0103
     @property
     def ok(self):
         return self.code == '1000'
@@ -534,33 +541,33 @@ class EppResponse(EppDoc):
     def msg(self):
         res = self.first_result
         if res:
-            m = res['msg']
-            if isinstance(m, dict):
-                m = m.get('_text', u'')
+            msg = res['msg']
+            if isinstance(msg, dict):
+                msg = msg.get('_text', u'')
 
             value = res.get('value', [{}])[0]
             if value:
                 if isinstance(value, basestring):
-                    m = u'{}; {}'.format(m, value)
+                    msg = u'{}; {}'.format(msg, value)
                 if isinstance(value, dict):
                     # afilias message looks like
                     # {'{urn:afilias:params:xml:ns:oxrs-1.1}xcp': 'detailed message'}
                     valuemsg = u', '.join(value.values())
                     if valuemsg:
-                        m = u'{}; {}'.format(m, valuemsg)
+                        msg = u'{}; {}'.format(msg, valuemsg)
 
             ext_value = res.get('extValue', [{}])[0]  # take the first one
             reason = ext_value.get(
                 'reason',
                 {}) if isinstance(
-                ext_value,
-                dict) else ''
+                    ext_value,
+                    dict) else ''
             if reason:
                 if isinstance('reason', dict):
                     reason = reason.get('_text', '')
                 if reason:
-                    m = u'{}; {}'.format(m, reason)
-            return m
+                    msg = u'{}; {}'.format(msg, reason)
+            return msg
         else:
             return ''
 
@@ -577,16 +584,16 @@ class EppResponse(EppDoc):
 
 def dpath_get(dct, path, default=None):
     default = {} if default is None else default
-    it = dct
-    for p in path:
-        it = it.get(p, default)
-    return it
+    cur = dct
+    for pat in path:
+        cur = cur.get(pat, default)
+    return cur
 
 
 def dpath_make(path):
     out = {}
-    it = out
-    for p in path:
-        it[p] = {}
-        it = it[p]
+    cur = out
+    for pat in path:
+        cur[pat] = {}
+        cur = cur[pat]
     return out
