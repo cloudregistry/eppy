@@ -9,7 +9,7 @@ functions to convert an XML file into a python dict, back and forth
 #         modified to handle attributes, namespaces..
 
 __author__ = "Wil Tan <wil@cloudregistry.net>"
-
+from xml.etree import ElementTree
 from six import StringIO, iteritems, text_type
 
 # hack: LCGCMT had the py-2.5 xml.etree module hidden by mistake.
@@ -35,7 +35,7 @@ def import_etree():
     return etree
 
 etree = import_etree()
-from xml.etree import ElementTree
+
 
 # module data ----------------------------------------------------------------
 __all__ = [
@@ -52,7 +52,8 @@ _BASE_NSMAP = {
 
 class XmlDictObject(dict):
     _path = ()
-    _childorder = {}  # relative to _path; only useful if defined at the same level at which _path is defined/overridden
+    _childorder = {}  # relative to _path; only useful if defined at the same
+                      # level at which _path is defined/overridden
     _multi_nodes = set()
 
     def __init__(self, initdict=None, nsmap=None, extra_nsmap=None):
@@ -70,8 +71,8 @@ class XmlDictObject(dict):
         nsmap_r = {}
         # build reverse map
         for prefix, uri in iteritems(nsmap):
-            if uri in nsmap_r and not prefix:  # default prefix should not override anything already in the rmap
-                continue
+            if uri in nsmap_r and not prefix:  # default prefix should not override anything
+                continue                # already in the rmap override anything already in the rmap
             nsmap_r[uri] = prefix
         self._nsmap_r = nsmap_r
 
@@ -84,9 +85,9 @@ class XmlDictObject(dict):
         if item in items:
             return items[item]
         else:
-            # we are calling the `dict` version of __str__ in case the regular __str__ implementation got overridden
-            # by a subclass that somehow calls this method again causing an
-            # unterminated recursion
+            # we are calling the `dict` version of __str__ in case the regular
+            # __str__ implementation got overridden
+            # by a subclass that somehow calls this method again causing an unterminated recursion
             raise AttributeError("no such node (%s/%s) in: %r (self=%s)" % ('/'.join(self._path),
                                                                             item,
                                                                             items,

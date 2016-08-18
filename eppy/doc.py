@@ -1,11 +1,11 @@
 # pylint: disable=C0111
 
+import copy
 from eppy.xmldict import XmlDictObject
 from eppy.xmldict import _BASE_NSMAP
-import copy
 from past.builtins import unicode, basestring # Python 2 backwards compatibility
-from . import childorder
 from six import iteritems
+from . import childorder
 from .utils import gen_trid
 
 EPP_NSMAP = dict(_BASE_NSMAP)
@@ -62,7 +62,7 @@ class EppDoc(XmlDictObject):
     def __str__(self):
         return unicode(self).encode('utf-8')
 
-    # pylint: disable=w0212
+    # pylint: disable=w0212, e1101
     @classmethod
     def cmddef(cls):
         """
@@ -87,7 +87,7 @@ class EppDoc(XmlDictObject):
                 dpath_get(dct, aclass._path)['_nsmap'] = aclass._nsmap
         return dct
 
-    # pylint: disable=w0212
+    # pylint: disable=w0212, e1101
     @classmethod
     def annotate(cls, dct=None):
         """
@@ -119,19 +119,19 @@ class EppDoc(XmlDictObject):
         return self.__class__.annotate(self)
 
     @classmethod
-    def _annotate_order_recurse(cls, dct, childorder):
-        if childorder.get('__order'):
-            dct['_order'] = childorder['__order']
-        for k in (k for k in childorder.keys() if k != '__order'):
+    def _annotate_order_recurse(cls, dct, childorder_):
+        if childorder_.get('__order'):
+            dct['_order'] = childorder_['__order']
+        for k in (k for k in childorder_.keys() if k != '__order'):
             child = dct.get(k)
             if isinstance(child, dict):
-                cls._annotate_order_recurse(child, childorder[k])
+                cls._annotate_order_recurse(child, childorder_[k])
             if isinstance(child, (list, tuple)):
                 # if there are multiple elements, we need to put the `_order` key in each
                 # element
                 for elem in child:
                     if isinstance(elem, dict):
-                        cls._annotate_order_recurse(elem, childorder[k])
+                        cls._annotate_order_recurse(elem, childorder_[k])
 
     @classmethod
     def from_xml(cls, buf, default_prefix='epp', extra_nsmap=None):
