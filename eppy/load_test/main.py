@@ -1,20 +1,31 @@
-from gevent import monkey; monkey.patch_all()
-import gevent
-import gevent.pool
+# pylint: disable=W0614, w0401, w0611, e0401
 from eppy.load_test import *
-import sys
 from optparse import OptionParser
-
+from gevent import monkey # pylint: disable=W0614, w0401, w0611, e0401
+monkey.patch_all()
+import sys
+import logging
 
 
 def main():
     parser = OptionParser(usage="%prog <userid> <passwd>")
-    parser.add_option('-c', type=int, dest='concurrency', default=1, help='number of concurrent connections')
-    parser.add_option('-n', type=int, dest='num_connectors', default=1, help='number of connections to make')
+    parser.add_option('-c', type=int, dest='concurrency', default=1,
+                      help='number of concurrent connections')
+    parser.add_option(
+        '-n',
+        type=int,
+        dest='num_connectors',
+        default=1,
+        help='number of connections to make')
     parser.add_option('--behavior', default='info_loop')
     parser.add_option('--no-wait', action='store_true', default=True)
     parser.add_option('--host', default='localhost', help='EPP host to connect to')
-    parser.add_option('--port', '-p', default=700, type=int, help='EPP port to connect to')
+    parser.add_option(
+        '--port',
+        '-p',
+        default=700,
+        type=int,
+        help='EPP port to connect to')
     parser.add_option('--ssl-key', default='certs/client-key.pem')
     parser.add_option('--ssl-cert', default='certs/client-cert.pem')
     parser.add_option('--ssl-cacerts', default='certs/cacerts.pem')
@@ -27,8 +38,7 @@ def main():
         sys.exit(1)
 
     logging.basicConfig(level=logging.DEBUG, stream=sys.stderr)
-    logger = logging.getLogger()
-
+    logging.getLogger()
 
     ctx = ExecutionContext(host=options.host,
                            port=options.port,
@@ -37,7 +47,6 @@ def main():
                            ssl_cacerts=options.ssl_cacerts,
                            userid=args[0],
                            passwd=args[1])
-
 
     behavior = parse_behavior(ctx, options)
     session = Session(ctx, behavior)
@@ -52,11 +61,9 @@ def main():
 if __name__ == '__main__':
     main()
 
-#chaos
-#swarm
+# chaos
+# swarm
 #swamp, flood
-#bezerk
-#ballistic
-#session has a connector, looper, bezerk modifier, 
-
-
+# bezerk
+# ballistic
+# session has a connector, looper, bezerk modifier,

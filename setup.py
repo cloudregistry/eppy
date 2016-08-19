@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 from eppy import __version__
 
-install_requires = ['six']
+install_requires = ['six', 'future']
 if sys.version_info < (3,2):
     install_requires.append('backports.ssl_match_hostname')
 
