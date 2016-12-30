@@ -49,6 +49,10 @@ class EppClient(object):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.settimeout(self.socket_connect_timeout)  # connect timeout
         self.sock.connect((host, port or self.port))
+        local_sock_addr = self.sock.getsockname()
+        local_addr, local_port = local_sock_addr[:2]
+        self.log.debug('connected local=%s:%s remote=%s:%s',
+                       local_addr, local_port, self.sock.getpeername()[0], port)
         self.sock.settimeout(self.socket_timeout)  # regular timeout
         if self.ssl_enable:
             self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile,
@@ -57,10 +61,12 @@ class EppClient(object):
                                         server_side=False,
                                         cert_reqs=self.cert_required,
                                         ca_certs=self.cacerts)
+            self.log.debug('%s negotiated with local=%s:%s remote=%s:%s', self.sock.version(),
+                           local_addr, local_port, self.sock.getpeername()[0], port)
             if self.validate_hostname:
                 try:
                     match_hostname(self.sock.getpeercert(), host)
-                except CertificateError, e:
+                except CertificateError as e:
                     self.log.exception("SSL hostname mismatch")
                     raise EppConnectionError(str(e))
 
