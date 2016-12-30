@@ -3,15 +3,14 @@
 import string
 import random
 
+CSET = string.ascii_letters + string.digits
 
-CSET = string.lowercase + string.digits + string.uppercase
-def randid(min=5, max=15):
+def randid(mini=5, maxi=15):
     """
-    Generate a random ID which size is at least <min> and
-    at most <max> characters
+    Generate a random ID which size is at least <mini> and
+    at most <maxi> characters
     """
-    if max <= min:
-        max = min + 1
-    return ''.join([random.choice(CSET) for i in range(min +
-                                                       random.choice(range(max - min)))])
-
+    if maxi <= mini:
+        maxi = mini + 1
+    return ''.join([random.choice(CSET) for i in range(mini +
+                                                       random.choice(range(maxi - mini)))])

@@ -2,6 +2,7 @@ from eppy.client import EppClient
 
 
 class Connector(object):
+
     def __init__(self, ctx, behavior, host=None, port=None, ssl_key=None, ssl_cert=None, ssl_cacerts=None,
                  logger=None, read_greeting=True):
         self.ctx = ctx
@@ -14,24 +15,22 @@ class Connector(object):
         self.read_greeting = read_greeting
         self.behavior = behavior
 
-
     def connect(self):
         do_ssl = self.ssl_cert is not None
         client = EppClient(host=self.host, port=self.port,
                            ssl_enable=do_ssl,
-			   ssl_keyfile=self.ssl_key,
-			   ssl_certfile=self.ssl_cert,
-			   ssl_cacerts=self.ssl_cacerts)
+                           ssl_keyfile=self.ssl_key,
+                           ssl_certfile=self.ssl_cert,
+                           ssl_cacerts=self.ssl_cacerts)
         try:
             client.connect(self.host, self.port)
             if self.read_greeting:
-                client.read() # discard greeting
+                client.read()  # discard greeting
         except:
             self.ctx.failed_to_connect()
             raise
         self.ctx.connected()
         return client
-
 
     def __call__(self):
         try:
@@ -42,5 +41,3 @@ class Connector(object):
 
     def __str__(self):
         return self.__class__.__name__
-
-

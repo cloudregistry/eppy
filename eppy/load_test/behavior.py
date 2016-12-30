@@ -1,20 +1,22 @@
 import random
 import time
 import eppy.doc
+from past.builtins import xrange # Python 2 backwards compatibility
 from .util import randid
 
 
 class Behavior(object):
+
     def __init__(self, ctx, logger=None):
         self.ctx = ctx
         self.logger = logger or self.ctx.getLogger(self)
 
     def __call__(self, client):
-        raise NotImplemented()
-
+        raise NotImplementedError
 
 
 class LoginBehavior(Behavior):
+
     def __init__(self, ctx, userid=None, passwd=None):
         super(LoginBehavior, self).__init__(ctx)
         self.userid = userid or ctx.userid
@@ -28,6 +30,7 @@ class LoginBehavior(Behavior):
 
 
 class LoginNoWaitBehavior(Behavior):
+
     def __init__(self, ctx, userid=None, passwd=None):
         super(LoginNoWaitBehavior, self).__init__(ctx)
         self.userid = userid or ctx.userid
@@ -37,18 +40,20 @@ class LoginNoWaitBehavior(Behavior):
         cmd = eppy.doc.EppLoginCommand()
         cmd.clID = self.userid
         cmd.pw = self.passwd
-        r = client.write(str(cmd))
+        client.write(str(cmd))
         # not reading response!
 
 
 class LoopBehavior(Behavior):
+
     def __init__(self, ctx, behavior, loop=1, sleep=None, sleep_min=0, sleep_max=5):
         super(LoopBehavior, self).__init__(ctx)
         self.behavior = behavior
         self.loop = int(loop)
         if sleep:
             if sleep is None:
-                self.sleep = lambda: time.sleep(sleep_min + random.random()*sleep_max)
+                self.sleep = lambda: time.sleep(
+                    sleep_min + random.random() * sleep_max)
             else:
                 self.sleep = lambda: time.sleep(sleep)
         else:
@@ -57,11 +62,12 @@ class LoopBehavior(Behavior):
     def __call__(self, client):
         for i in xrange(self.loop):
             self.behavior(client)
-            if i < self.loop - 1: # don't sleep at the last one
+            if i < self.loop - 1:  # don't sleep at the last one
                 self.sleep()
 
 
 class BatchSendBehavior(Behavior):
+
     def __init__(self, ctx, cmdgens, pipeline=False):
         super(BatchSendBehavior, self).__init__(ctx)
         self.cmdgens = cmdgens
@@ -77,6 +83,7 @@ class BatchSendBehavior(Behavior):
 
 
 class SingleCommand(Behavior):
+
     def __init__(self, ctx, cmdgen):
         super(SingleCommand, self).__init__(ctx)
         self.cmdgen = cmdgen
@@ -91,18 +98,22 @@ class SingleCommand(Behavior):
 
 
 class NoopBehavior(Behavior):
+
     def __call__(self, client):
         pass
 
 
 class LogoutBehavior(Behavior):
+
     def __call__(self, client):
         r = client.logout()
         return r
 
 
 class BehaviorComposer(Behavior):
-    def __init__(self, ctx, middle_behavior, userid=None, passwd=None, wait_login=True):
+
+    def __init__(self, ctx, middle_behavior, userid=None,
+                 passwd=None, wait_login=True):
         super(BehaviorComposer, self).__init__(ctx)
 
         login_behavior = (LoginBehavior(ctx, userid, passwd)
@@ -114,8 +125,6 @@ class BehaviorComposer(Behavior):
     def __call__(self, client):
         for b in self.behaviors:
             b(client)
-
-
 
 
 def info_domain_factory(zone):
@@ -139,11 +148,12 @@ def strbool(v):
 
 
 BEHAVIORS = {
-    'info_batch': lambda ctx, options, repeat=100: \
-        BatchSendBehavior(ctx, [info_domain_factory(options.zone)]*int(repeat)),
+    'info_batch': lambda ctx, options, repeat=100:
+    BatchSendBehavior(ctx, [info_domain_factory(options.zone)] * int(repeat)),
     'info_loop': lambda ctx, options, loop=20, sleep=1: LoopBehavior(ctx,
-                                                       SingleCommand(ctx, info_domain_factory(options.zone)),
-                                                       loop=loop, sleep=int(sleep)),
+                                                                     SingleCommand(
+                                                                         ctx, info_domain_factory(options.zone)),
+                                                                     loop=loop, sleep=int(sleep)),
     'fatso': lambda ctx, options, num_domains=10: SingleCommand(ctx, check_domain_factory(options.zone, num_domains)),
 }
 
@@ -151,7 +161,6 @@ BEHAVIORS = {
 def parse_behavior(ctx, options):
     behavior_type, _, opts = options.behavior.partition(':')
     opts = opts.split(',') if opts else []
-    behavior = BehaviorComposer(ctx, BEHAVIORS[behavior_type](ctx, options, *opts), wait_login=(not options.no_wait))
+    behavior = BehaviorComposer(ctx, BEHAVIORS[behavior_type](
+        ctx, options, *opts), wait_login=(not options.no_wait))
     return behavior
-
-

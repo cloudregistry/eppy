@@ -3,3 +3,4 @@ contributions from:
 
 - Evgeniy Getmanskiy <getmansky@steelkiwi.com>
 - Diogo Vieira <dfv@eurotux.com>
+- Lucas Estienne <lucas.estienne@cira.ca>

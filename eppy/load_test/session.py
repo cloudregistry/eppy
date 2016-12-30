@@ -1,9 +1,11 @@
 import gevent.pool
 import time
+from past.builtins import xrange # Python 2 backwards compatibility
 from .connector import Connector
 
 
 class Session(object):
+
     def __init__(self, ctx, behavior=None):
         self.num_connectors = 1
         self.concurrency = 1
@@ -22,5 +24,3 @@ class Session(object):
             pool.join()
         except KeyboardInterrupt:
             pass
-
-
