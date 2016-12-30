@@ -493,6 +493,7 @@ class EppResponse(EppDoc):
         ('epp', 'response', 'result', 'value'),
         ('epp', 'response', 'result', 'extValue'),
         ('epp', 'response', 'resData', 'domain:infData', 'status'),
+        ('epp', 'response', 'resData', 'domain:infData', 'contact'),
         ('epp', 'response', 'resData', 'domain:infData', 'ns', 'hostObj'),
         ('epp', 'response', 'resData', 'domain:infData', 'ns', 'hostAttr'),
         ('epp', 'response', 'resData', 'domain:infData', 'ns', 'hostAttr', 'hostAddr'),
