@@ -422,7 +422,7 @@ class EppDeleteHostCommand(EppDeleteCommand):
 class EppPollCommand(EppCommand):
     _path = ('epp', 'command', 'poll')
 
-    def __init__(self, op, msgID=None):
+    def __init__(self, op, msgID=None, extra_nsmap=None):
         pollattr = {"@op": op}
         if msgID is not None:
             pollattr['@msgID'] = str(msgID)
@@ -435,16 +435,16 @@ class EppPollCommand(EppCommand):
             },
         }
 
-        super(EppPollCommand, self).__init__(dct)
+        super(EppPollCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
 
 
 class EppTransferCommand(EppCommand):
     _path = EppCommand._path + ('transfer',)
 
-    def __init__(self, op):
+    def __init__(self, op, extra_nsmap=None):
         dct = self.cmddef()
         dct['epp']['command']['transfer']['@op'] = op
-        super(EppTransferCommand, self).__init__(dct)
+        super(EppTransferCommand, self).__init__(dct, extra_nsmap=extra_nsmap)
 
 
 class EppTransferDomainCommand(EppTransferCommand):
