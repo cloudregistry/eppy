@@ -90,6 +90,7 @@ class EppClient(object):
                 except CertificateError as exp:
                     self.log.exception("SSL hostname mismatch")
                     raise EppConnectionError(str(exp))
+        self.greeting = EppResponse.from_xml(self.read().decode('utf-8'))
 
     def remote_info(self):
         """
