@@ -110,7 +110,6 @@ class EppClient(object):
               obj_uris=None, extra_obj_uris=None, extra_ext_uris=None, clTRID=None):
         if not self.sock:
             self.connect(self.host, self.port)
-            self.greeting = EppResponse.from_xml(self.read().decode('utf-8'))
 
         cmd = EppLoginCommand(
             obj_uris=obj_uris,
