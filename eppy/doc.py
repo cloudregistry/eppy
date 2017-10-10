@@ -394,6 +394,9 @@ class EppUpdateContactCommand(EppUpdateCommand):
                     '__order': childorder.ADDR
                 },
             },
+            'disclose': {
+                '__order': childorder.DISCLOSE
+            },
         },
     }
 
