@@ -67,9 +67,10 @@ class EppClient(object):
         """
         Method that initiates a connection to an EPP host
         """
+        host = host or self.host
         self.sock = socket.socket(address_family or socket.AF_INET, socket.SOCK_STREAM)
         self.sock.settimeout(self.socket_connect_timeout)  # connect timeout
-        self.sock.connect((host or self.host, port or self.port))
+        self.sock.connect((host, port or self.port))
         local_sock_addr = self.sock.getsockname()
         local_addr, local_port = local_sock_addr[:2]
         self.log.debug('connected local=%s:%s remote=%s:%s',
