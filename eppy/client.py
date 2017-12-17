@@ -63,11 +63,12 @@ class EppClient(object):
         else:
             self.cert_required = ssl.CERT_NONE
 
-    def connect(self, host, port=None):
+    def connect(self, host=None, port=None, address_family=None):
         """
         Method that initiates a connection to an EPP host
         """
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        host = host or self.host
+        self.sock = socket.socket(address_family or socket.AF_INET, socket.SOCK_STREAM)
         self.sock.settimeout(self.socket_connect_timeout)  # connect timeout
         self.sock.connect((host, port or self.port))
         local_sock_addr = self.sock.getsockname()
