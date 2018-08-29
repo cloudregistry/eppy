@@ -28,8 +28,8 @@ EPP_NSMAP.update({
     'launch': 'urn:ietf:params:xml:ns:launch-1.0',
     'smd': 'urn:ietf:params:xml:ns:signedMark-1.0',
     'mark': 'urn:ietf:params:xml:ns:mark-1.0',
+    'changePoll': 'urn:ietf:params:xml:ns:changePoll-1.0',
 })
-
 
 class EppDoc(XmlDictObject):
 
